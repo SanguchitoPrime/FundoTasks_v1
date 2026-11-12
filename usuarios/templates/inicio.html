@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - FundoTasks{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    
+    <!-- COLUMNA IZQUIERDA: ESTANQUE DE AGUA -->
+    <div class="lg:col-span-1 flex flex-col gap-4">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold text-slate-800">Agua del Estanque</h2>
+            </div>
+
+            <!-- Estado del Estanque -->
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-xl">💧</div>
+                <div>
+                    <h3 class="font-bold text-slate-800">Estanque Principal</h3>
+                    <p class="text-xs text-emerald-600 font-semibold">Nivel Óptimo (Buena agua)</p>
+                </div>
+            </div>
+
+            <!-- Gráfico del Estanque -->
+            <div class="relative w-full h-64 bg-slate-50 border-4 border-slate-200 rounded-3xl overflow-hidden shadow-inner flex flex-col justify-end">
+                <div class="relative w-full bg-blue-400 transition-all duration-1000 ease-in-out flex flex-col items-center justify-start pt-6" style="height: 77%;">
+                    <div class="absolute -top-3 w-full h-6 bg-blue-400 rounded-[50%] blur-[2px] opacity-80"></div>
+                    <span class="text-4xl font-extrabold text-white drop-shadow-md relative z-10">77%</span>
+                    <span class="text-sm font-bold text-blue-100 relative z-10 mt-1">38.500 Litros</span>
+                    <span class="text-xs text-blue-200 relative z-10">Capacidad: 50.000 L</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COLUMNA DERECHA: RESUMEN DE TAREAS -->
+    <div class="lg:col-span-2 flex flex-col gap-4">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-full">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-bold text-slate-800">Tareas para Hoy</h2>
+                <a href="{% url 'usuarios:tareas' %}" class="text-sm font-medium text-emerald-600 hover:text-emerald-500">Ver todas ></a>
+            </div>
+
+            <!-- Lista de Tareas (Estilo Tarjetas) -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md transition-all">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded mt-1">ALTA</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">Verificar nivel del estanque y sensores IoT</h4>
+                            <p class="text-sm text-slate-500">Sector: Estanque Principal</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md transition-all">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded mt-1">MEDIA</div>
+                        <div>
+                            <h4 class="font-bold text-slate-800">Inspección de líneas de riego por goteo</h4>
+                            <p class="text-sm text-slate-500">Sector: Norte - Manzanos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

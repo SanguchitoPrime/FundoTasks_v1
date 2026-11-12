@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Mis Tareas - FundoTasks{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Encabezado del mes y controles de semana -->
+    <div class="flex items-center justify-between mb-4">
+        <h1 id="mes-titulo" class="text-2xl font-bold text-emerald-700">Cargando...</h1>
+        <div class="flex items-center gap-3">
+            <button id="btn-prev" class="text-slate-400 hover:text-emerald-600 font-bold px-2">&lt;</button>
+            <span id="btn-hoy" class="text-emerald-600 font-semibold cursor-pointer">Hoy</span>
+            <button id="btn-next" class="text-slate-400 hover:text-emerald-600 font-bold px-2">&gt;</button>
+        </div>
+    </div>
+    
+    <!-- Calendario Horizontal Dinámico -->
+    <div id="calendario-contenedor" class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 overflow-x-auto gap-2">
+        <!-- Los días se generan con JavaScript aquí -->
+    </div>
+
+    <!-- Tareas del día seleccionado -->
+    <h2 id="fecha-seleccionada" class="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 border-b border-slate-200 pb-2"></h2>
+    
+    <div class="space-y-4">
+        <!-- Tarea 1 -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="bg-rose-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-rose-700 flex-shrink-0">
+                <span class="font-bold text-sm">08:30</span>
+                <span class="text-xs opacity-70">10:50</span>
+                <span class="text-xs font-semibold mt-2">ALTA</span>
+            </div>
+            <div class="flex-1">
+                <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded border border-emerald-200 inline-block mb-2">Completada</span>
+                <h3 class="text-lg font-bold text-slate-800">Verificar nivel del estanque y sensores IoT</h3>
+                <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre|default:user.username }}</p>
+                <p class="text-sm text-slate-500">Sector: Estanque Principal</p>
+            </div>
+        </div>
+
+        <!-- Tarea 2 -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 hover:shadow-md transition-shadow cursor-pointer">
+            <div class="bg-amber-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-amber-700 flex-shrink-0">
+                <span class="font-bold text-sm">11:00</span>
+                <span class="text-xs opacity-70">13:15</span>
+                <span class="text-xs font-semibold mt-2">MEDIA</span>
+            </div>
+            <div class="flex-1">
+                <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200 inline-block mb-2">Pendiente</span>
+                <h3 class="text-lg font-bold text-slate-800">Inspección de líneas de riego por goteo</h3>
+                <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre|default:user.username }}</p>
+                <p class="text-sm text-slate-500">Sector: Norte - Manzanos</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        let currentStartDate = new Date();
+        let selectedDate = new Date(); // Inicia marcando "Hoy"
+
+        const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const diasSemana = ["D", "L", "M", "M", "J", "V", "S"];
+        const diasSemanaLargo = ["DO", "LU", "MA", "MI", "JU", "VI", "SA"];
+
+        // Ajustar currentStartDate al Lunes de la semana actual
+        function getMonday(d) {
+            d = new Date(d);
+            var day = d.getDay(),
+                diff = d.getDate() - day + (day == 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        function renderWeek() {
+            const container = document.getElementById("calendario-contenedor");
+            container.innerHTML = "";
+            let monday = getMonday(currentStartDate);
+
+            // Actualizar título del mes basado en el lunes de la semana
+            document.getElementById("mes-titulo").textContent = `${meses[monday.getMonth()]} ${monday.getFullYear()}`;
+
+            for (let i = 0; i < 7; i++) {
+                let iterDate = new Date(monday);
+                iterDate.setDate(monday.getDate() + i);
+
+                let isSelected = iterDate.toDateString() === selectedDate.toDateString();
+                
+                // Construir HTML del día
+                let dayDiv = document.createElement("div");
+                dayDiv.className = "flex flex-col items-center min-w-[3rem] cursor-pointer transition-transform hover:scale-110";
+                
+                // Determinar colores y estilos si está seleccionado
+                let letterColor = isSelected ? "text-emerald-700 font-bold" : "text-slate-500";
+                let numberStyle = isSelected 
+                    ? "bg-emerald-600 text-white shadow-md rounded-full w-10 h-10 flex items-center justify-center font-bold" 
+                    : "text-slate-700 font-medium h-10 flex items-center";
+                let dotHtml = isSelected 
+                    ? '<div class="w-1.5 h-1.5 bg-emerald-600 rounded-full mt-1"></div>' 
+                    : '<div class="w-1.5 h-1.5 bg-transparent rounded-full mt-1"></div>';
+
+                dayDiv.innerHTML = `
+                    <span class="text-xs mb-1 ${letterColor}">${diasSemana[iterDate.getDay()]}</span>
+                    <span class="text-lg ${numberStyle}">${iterDate.getDate()}</span>
+                    ${dotHtml}
+                `;
+
+                // Evento al hacer clic en un día
+                dayDiv.addEventListener("click", () => {
+                    selectedDate = new Date(iterDate);
+                    updateSubtitle();
+                    renderWeek();
+                });
+
+                container.appendChild(dayDiv);
+            }
+        }
+
+        function updateSubtitle() {
+            let subtitulo = `${diasSemanaLargo[selectedDate.getDay()]}, ${selectedDate.getDate()} DE ${meses[selectedDate.getMonth()].toUpperCase()}, ${selectedDate.getFullYear()}`;
+            document.getElementById("fecha-seleccionada").textContent = subtitulo;
+        }
+
+        // Listeners para los botones
+        document.getElementById("btn-prev").addEventListener("click", () => {
+            currentStartDate.setDate(currentStartDate.getDate() - 7);
+            renderWeek();
+        });
+
+        document.getElementById("btn-next").addEventListener("click", () => {
+            currentStartDate.setDate(currentStartDate.getDate() + 7);
+            renderWeek();
+        });
+
+        document.getElementById("btn-hoy").addEventListener("click", () => {
+            currentStartDate = new Date();
+            selectedDate = new Date();
+            updateSubtitle();
+            renderWeek();
+        });
+
+        // Inicializar
+        currentStartDate = new Date();
+        updateSubtitle();
+        renderWeek();
+    });
+</script>
+{% endblock %}
