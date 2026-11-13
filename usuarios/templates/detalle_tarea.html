@@ -12,9 +12,15 @@
     <!-- Tarjeta de Detalle -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <!-- Cabecera de la tarea -->
-        <div class="bg-{{ tarea.color }}-50 p-6 border-b border-{{ tarea.color }}-100 flex justify-between items-start">
+        <div class="p-6 border-b flex justify-between items-start
+            {% if tarea.color == 'rose' %} bg-rose-50 border-rose-100
+            {% elif tarea.color == 'amber' %} bg-amber-50 border-amber-100
+            {% else %} bg-indigo-50 border-indigo-100 {% endif %}">
             <div>
-                <span class="inline-block bg-{{ tarea.color }}-200 text-{{ tarea.color }}-800 text-xs font-bold px-2 py-1 rounded mb-3 uppercase tracking-wider">
+                <span class="inline-block text-xs font-bold px-2 py-1 rounded mb-3 uppercase tracking-wider
+                    {% if tarea.color == 'rose' %} bg-rose-200 text-rose-800
+                    {% elif tarea.color == 'amber' %} bg-amber-200 text-amber-800
+                    {% else %} bg-indigo-200 text-indigo-800 {% endif %}">
                     PRIORIDAD {{ tarea.prioridad }}
                 </span>
                 <h1 class="text-2xl font-bold text-slate-900">{{ tarea.titulo }}</h1>
@@ -24,7 +30,7 @@
             </div>
             
             <div class="text-right">
-                <span class="text-sm font-bold px-3 py-1.5 rounded-lg border 
+                <span id="estado-pill" class="text-sm font-bold px-3 py-1.5 rounded-lg border 
                     {% if tarea.estado == 'Completada' %} bg-emerald-50 text-emerald-700 border-emerald-200
                     {% elif tarea.estado == 'En Progreso' %} bg-blue-50 text-blue-700 border-blue-200
                     {% else %} bg-slate-100 text-slate-600 border-slate-200 {% endif %}">
@@ -35,10 +41,10 @@
 
         <!-- Cuerpo de información -->
         <div class="p-6 space-y-6">
-            <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                 <div>
-                    <span class="block text-xs font-semibold text-slate-500 uppercase">Encargado</span>
-                    <span class="font-medium text-slate-800">{{ user.nombre|default:user.username }}</span>
+                    <span class="block text-xs font-semibold text-slate-500 uppercase">Encargado(s)</span>
+                    <span class="font-medium text-slate-800">{{ tarea.encargados|default:user.nombre }}</span>
                 </div>
                 <div>
                     <span class="block text-xs font-semibold text-slate-500 uppercase">Sector</span>
@@ -53,24 +59,45 @@
                 </p>
             </div>
             
-            <!-- NUEVA SECCIÓN DE NOTAS -->
+            <!-- Sección de Notas y Observaciones -->
             <div class="mt-6 border-t border-slate-100 pt-6">
                 <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
                     📝 Notas y Observaciones
                 </h3>
-                <textarea rows="4" class="block w-full rounded-xl border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-3 bg-slate-50 placeholder-slate-400" placeholder="Escribe aquí si hubo alguna anomalía, animales enfermos, daños en mangueras o falta de insumos..."></textarea>
+                <textarea id="notas-tarea" rows="4" class="block w-full rounded-xl border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-3 bg-slate-50 placeholder-slate-400 border" placeholder="Escribe aquí si hubo alguna anomalía, animales enfermos, daños en mangueras o falta de insumos..."></textarea>
+                <p id="mensaje-nota" class="hidden text-xs font-semibold text-emerald-600 mt-2">✓ Observación registrada correctamente.</p>
             </div>
             
             <!-- Botones de acción -->
             <div class="pt-4 flex justify-end gap-3">
-                <button class="px-5 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors">
+                <button type="button" onclick="guardarObservacion('incidencia')" class="px-5 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors">
                     Reportar Incidencia
                 </button>
-                <button class="px-5 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 shadow-sm transition-colors">
+                <button type="button" onclick="guardarObservacion('finalizar')" class="px-5 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 shadow-sm transition-colors">
                     Guardar y Finalizar
                 </button>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function guardarObservacion(tipo) {
+        const msg = document.getElementById('mensaje-nota');
+        const pill = document.getElementById('estado-pill');
+        msg.classList.remove('hidden');
+
+        if (tipo === 'incidencia') {
+            msg.textContent = '⚠️ Incidencia registrada en la bitácora del turno.';
+            msg.className = 'text-xs font-semibold text-amber-600 mt-2';
+        } else {
+            msg.textContent = '✓ Observación guardada y tarea marcada como completada.';
+            msg.className = 'text-xs font-semibold text-emerald-600 mt-2';
+            pill.textContent = 'Completada';
+            pill.className = 'text-sm font-bold px-3 py-1.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-200';
+        }
+    }
+</script>
 {% endblock %}

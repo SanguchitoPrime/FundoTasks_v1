@@ -33,16 +33,16 @@
         </div>
     </div>
 
-    <!-- COLUMNA DERECHA: RESUMEN DE TAREAS -->
+    <!-- COLUMNA DERECHA: RESUMEN DE TAREAS PARA HOY -->
     <div class="lg:col-span-2 flex flex-col gap-4">
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-full">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-lg font-bold text-slate-800">Tareas para Hoy</h2>
-                <a href="{% url 'usuarios:tareas' %}" class="text-sm font-medium text-emerald-600 hover:text-emerald-500">Ver todas ></a>
+                <a href="{% url 'usuarios:tareas' %}" class="text-sm font-medium text-emerald-600 hover:text-emerald-500">Ver todas &gt;</a>
             </div>
 
-            <!-- Lista de Tareas (Estilo Tarjetas) -->
-            <div class="space-y-4">
+            <!-- Lista de Tareas (Diarias + Puntuales de Hoy según Rol) -->
+            <div class="space-y-4" id="lista-tareas-hoy">
                 <!-- Tarea 1: Ordeña Mañana -->
                 <a href="{% url 'usuarios:detalle_tarea' 1 %}" class="block group task-card-hoy" data-start="05:00" data-end="07:00">
                     <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 group-hover:bg-white group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
@@ -51,7 +51,7 @@
                             <div>
                                 <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
                                 <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Ordeña (Turno Mañana)</h4>
-                                <p class="text-sm text-slate-500">Sector: Sala de Ordeña</p>
+                                <p class="text-sm text-slate-500">05:00 - 07:00 · Sector: Sala de Ordeña</p>
                             </div>
                         </div>
                     </div>
@@ -65,7 +65,7 @@
                             <div>
                                 <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
                                 <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Limpieza Patios y Corrales</h4>
-                                <p class="text-sm text-slate-500">Sector: Corrales 1 al 4</p>
+                                <p class="text-sm text-slate-500">09:00 - 12:00 · Sector: Corrales 1 al 4</p>
                             </div>
                         </div>
                     </div>
@@ -79,27 +79,49 @@
                             <div>
                                 <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
                                 <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Ordeña (Turno Tarde)</h4>
-                                <p class="text-sm text-slate-500">Sector: Sala de Ordeña</p>
+                                <p class="text-sm text-slate-500">14:00 - 16:00 · Sector: Sala de Ordeña</p>
                             </div>
                         </div>
                     </div>
                 </a>
+
+                <!-- Tareas Puntuales de Hoy desde Oracle DB -->
+                {% for t in tareas_puntuales_hoy %}
+                <a href="{% url 'usuarios:detalle_tarea_puntual' t.idTarea %}" class="block group task-card-hoy" data-start="{{ t.horaInicio }}" data-end="{{ t.horaFin }}">
+                    <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 group-hover:bg-white group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
+                        <div class="flex items-start gap-4">
+                            <div class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded mt-1">PUNTUAL</div>
+                            <div>
+                                <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
+                                <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">{{ t.nombreTarea }}</h4>
+                                <p class="text-sm text-slate-500">{{ t.horaInicio }} - {{ t.horaFin }} · Encargado(s): {{ t.lista_encargados }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
             </div>
         </div>
     </div>
 
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
     document.addEventListener("DOMContentLoaded", () => {
-        // Obtener hora actual en formato HH:MM
         const now = new Date();
         const currentHour = now.getHours().toString().padStart(2, '0');
         const currentMin = now.getMinutes().toString().padStart(2, '0');
         const currentTimeStr = `${currentHour}:${currentMin}`;
 
-        // Recorrer las tareas del Dashboard
+        // Ordenar cronológicamente las tareas del Dashboard
+        const container = document.getElementById('lista-tareas-hoy');
+        const cardsArray = Array.from(container.children);
+        cardsArray.sort((a, b) => a.getAttribute('data-start').localeCompare(b.getAttribute('data-start')));
+        container.innerHTML = '';
+        cardsArray.forEach(card => container.appendChild(card));
+
         document.querySelectorAll('.task-card-hoy').forEach(card => {
             const badge = card.querySelector('.badge-estado');
             const start = card.getAttribute('data-start');
@@ -114,7 +136,6 @@
                 status = "Pendiente";
             }
 
-            // Aplicar colores según estado
             if (status === "Completada") {
                 badge.className = "badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 uppercase tracking-wider bg-emerald-50 text-emerald-600 border-emerald-200";
             } else if (status === "En Progreso") {

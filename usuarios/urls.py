@@ -11,5 +11,6 @@ urlpatterns = [
     path('logout/', views.cerrar_sesion, name="logout"),
     path('tareas/', views.mis_tareas_view, name="tareas"),
     path('configuracion/', views.configuracion_view, name="configuracion"),
-    path('tarea/<int:tarea_id>/', views.detalle_tarea_view, name="detalle_tarea"), 
+    path('tarea/<int:tarea_id>/', views.detalle_tarea_view, name="detalle_tarea"),
+    path('tarea/puntual/<int:tarea_id>/', views.detalle_tarea_puntual_view, name="detalle_tarea_puntual"),
 ]

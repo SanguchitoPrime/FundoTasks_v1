@@ -22,7 +22,6 @@
     <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-2">
         <h2 id="fecha-seleccionada" class="text-sm font-semibold text-slate-500 uppercase tracking-wider"></h2>
         
-        <!-- Botón exclusivo para Administradores -->
         {% if user.cargo == 'Administrador' %}
         <button onclick="abrirModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-colors flex items-center gap-1">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -32,8 +31,8 @@
     </div>
     
     <div class="space-y-4" id="lista-tareas">
-        <!-- Tarea 1: Ordeña Mañana -->
-        <a href="{% url 'usuarios:detalle_tarea' 1 %}" class="block group task-card" data-start="05:00" data-end="07:00">
+        <!-- Tarea 1: Ordeña Mañana (Diaria fija) -->
+        <a href="{% url 'usuarios:detalle_tarea' 1 %}" data-base-url="{% url 'usuarios:detalle_tarea' 1 %}" class="block group task-card daily-task" data-start="05:00" data-end="07:00">
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
                 <div class="bg-rose-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-rose-700 flex-shrink-0">
                     <span class="font-bold text-sm">05:00</span>
@@ -43,14 +42,14 @@
                 <div class="flex-1">
                     <span class="task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 transition-colors">Cargando...</span>
                     <h3 class="text-lg font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Ordeña (Turno Mañana)</h3>
-                    <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre|default:user.username }}</p>
+                    <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre }}</p>
                     <p class="text-sm text-slate-500">Sector: Sala de Ordeña</p>
                 </div>
             </div>
         </a>
 
-        <!-- Tarea 2: Limpieza -->
-        <a href="{% url 'usuarios:detalle_tarea' 2 %}" class="block group task-card" data-start="09:00" data-end="12:00">
+        <!-- Tarea 2: Limpieza (Diaria fija) -->
+        <a href="{% url 'usuarios:detalle_tarea' 2 %}" data-base-url="{% url 'usuarios:detalle_tarea' 2 %}" class="block group task-card daily-task" data-start="09:00" data-end="12:00">
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
                 <div class="bg-amber-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-amber-700 flex-shrink-0">
                     <span class="font-bold text-sm">09:00</span>
@@ -60,14 +59,14 @@
                 <div class="flex-1">
                     <span class="task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 transition-colors">Cargando...</span>
                     <h3 class="text-lg font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Limpieza Patios y Corrales</h3>
-                    <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre|default:user.username }}</p>
+                    <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre }}</p>
                     <p class="text-sm text-slate-500">Sector: Corrales 1 al 4</p>
                 </div>
             </div>
         </a>
 
-        <!-- Tarea 3: Ordeña Tarde -->
-        <a href="{% url 'usuarios:detalle_tarea' 3 %}" class="block group task-card" data-start="14:00" data-end="16:00">
+        <!-- Tarea 3: Ordeña Tarde (Diaria fija) -->
+        <a href="{% url 'usuarios:detalle_tarea' 3 %}" data-base-url="{% url 'usuarios:detalle_tarea' 3 %}" class="block group task-card daily-task" data-start="14:00" data-end="16:00">
             <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
                 <div class="bg-rose-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-rose-700 flex-shrink-0">
                     <span class="font-bold text-sm">14:00</span>
@@ -77,56 +76,78 @@
                 <div class="flex-1">
                     <span class="task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 transition-colors">Cargando...</span>
                     <h3 class="text-lg font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Ordeña (Turno Tarde)</h3>
-                    <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre|default:user.username }}</p>
+                    <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre }}</p>
                     <p class="text-sm text-slate-500">Sector: Sala de Ordeña</p>
                 </div>
             </div>
         </a>
+
+        <!-- Tareas Puntuales desde Oracle DB (Filtradas por Rol y Fecha) -->
+        {% for t in tareas_puntuales %}
+        <a href="{% url 'usuarios:detalle_tarea_puntual' t.idTarea %}" class="block group task-card puntual-task" data-fecha="{{ t.fechaProgramada|date:'Y-m-d' }}" data-start="{{ t.horaInicio }}" data-end="{{ t.horaFin }}">
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
+                <div class="bg-indigo-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-indigo-700 flex-shrink-0">
+                    <span class="font-bold text-sm">{{ t.horaInicio }}</span>
+                    <span class="text-xs opacity-70">{{ t.horaFin }}</span>
+                    <span class="text-xs font-semibold mt-2">PUNTUAL</span>
+                </div>
+                <div class="flex-1">
+                    <span class="task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 transition-colors">Cargando...</span>
+                    <h3 class="text-lg font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">{{ t.nombreTarea }}</h3>
+                    <p class="text-sm text-slate-500 mt-1">Encargado(s): {{ t.lista_encargados }}</p>
+                    <p class="text-sm text-slate-500">{{ t.descripcion }}</p>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
     </div>
 </div>
 
 <!-- MODAL CREAR TAREA PUNTUAL -->
+{% if user.cargo == 'Administrador' %}
 <div id="modal-tarea" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center opacity-0 transition-opacity duration-300">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300" id="modal-content">
         <div class="bg-emerald-700 p-4 flex justify-between items-center">
             <h3 class="text-white font-bold text-lg">Crear Tarea Puntual</h3>
-            <button onclick="cerrarModal()" class="text-emerald-200 hover:text-white font-bold text-xl">&times;</button>
+            <button type="button" onclick="cerrarModal()" class="text-emerald-200 hover:text-white font-bold text-xl">&times;</button>
         </div>
-        <form id="form-nueva-tarea" class="p-5 space-y-4">
+        <form method="POST" action="{% url 'usuarios:tareas' %}" id="form-nueva-tarea" class="p-5 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="fecha_programada" id="t-fecha">
+
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Nombre de la Tarea</label>
-                <input type="text" id="t-nombre" required class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50">
+                <input type="text" name="nombre_tarea" id="t-nombre" required class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50" placeholder="Ej: Revisión de cercos sector sur">
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Hora Inicio</label>
-                    <input type="time" id="t-inicio" required class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50">
+                    <input type="time" name="hora_inicio" id="t-inicio" required class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Hora Fin</label>
-                    <input type="time" id="t-fin" required class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50">
+                    <input type="time" name="hora_fin" id="t-fin" required class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50">
                 </div>
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Asignar a (Miembros)</label>
-                <!-- Lista de Checkboxes con scroll -->
+                <label class="block text-sm font-medium text-slate-700 mb-2">Asignar a (Personal)</label>
                 <div class="max-h-32 overflow-y-auto bg-slate-50 border border-slate-300 rounded-lg p-2 space-y-1">
-                    {% for u in usuarios %}
+                    {% for p in personal %}
                     <label class="flex items-center gap-3 cursor-pointer p-2 hover:bg-slate-200/50 rounded-md transition-colors">
-                        <input type="checkbox" name="asignados_checkbox" value="{{ u.nombre|default:u.username }}" class="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500">
+                        <input type="checkbox" name="asignados_checkbox" value="{{ p.idPersonal }}" class="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500">
                         <span class="text-sm text-slate-700 font-medium">
-                            {{ u.nombre|default:u.username }} 
-                            <span class="text-[10px] text-slate-500 font-normal ml-1">({{ u.cargo }})</span>
+                            {{ p.nombre }}
+                            <span class="text-[11px] text-slate-500 font-normal ml-1">({{ p.rut }})</span>
                         </span>
                     </label>
                     {% empty %}
-                    <div class="p-2 text-sm text-slate-500 text-center">No hay usuarios disponibles.</div>
+                    <div class="p-2 text-sm text-slate-500 text-center">No hay personal activo disponible.</div>
                     {% endfor %}
                 </div>
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-                <textarea id="t-desc" rows="2" class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50"></textarea>
+                <textarea name="descripcion" id="t-desc" rows="2" class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50" placeholder="Detalles o instrucciones adicionales..."></textarea>
             </div>
             <div class="pt-2 flex justify-end gap-3 border-t border-slate-100">
                 <button type="button" onclick="cerrarModal()" class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">Cancelar</button>
@@ -135,15 +156,16 @@
         </form>
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    // Variables de Modal
     const modal = document.getElementById('modal-tarea');
     const modalContent = document.getElementById('modal-content');
 
     function abrirModal() {
+        if (!modal) return;
         modal.classList.remove('hidden');
         setTimeout(() => {
             modal.classList.remove('opacity-0');
@@ -152,21 +174,36 @@
     }
 
     function cerrarModal() {
+        if (!modal) return;
         modal.classList.add('opacity-0');
         modalContent.classList.add('scale-95');
         setTimeout(() => {
             modal.classList.add('hidden');
-            document.getElementById('form-nueva-tarea').reset();
         }, 300);
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        let currentStartDate = new Date();
-        let selectedDate = new Date();
+        const urlParams = new URLSearchParams(window.location.search);
+        const fechaParam = urlParams.get('fecha');
+        let initialDate = new Date();
+        if (fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam)) {
+            const [y, m, d] = fechaParam.split('-').map(Number);
+            initialDate = new Date(y, m - 1, d);
+        }
+
+        let currentStartDate = new Date(initialDate);
+        let selectedDate = new Date(initialDate);
 
         const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         const diasSemana = ["D", "L", "M", "M", "J", "V", "S"];
         const diasSemanaLargo = ["DO", "LU", "MA", "MI", "JU", "VI", "SA"];
+
+        function formatDateISO(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        }
 
         function getMonday(d) {
             d = new Date(d);
@@ -174,17 +211,20 @@
             return new Date(d.setDate(diff));
         }
 
-        // --- LÓGICA DE ESTADOS Y ORDEN DE TAREAS ---
         function updateTasksStatus() {
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
             const sel = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+            const selectedISO = formatDateISO(selectedDate);
+
+            const inputFecha = document.getElementById('t-fecha');
+            if (inputFecha) inputFecha.value = selectedISO;
             
             const currentHour = now.getHours().toString().padStart(2, '0');
             const currentMin = now.getMinutes().toString().padStart(2, '0');
             const currentTimeStr = `${currentHour}:${currentMin}`;
 
-            // Ordenar las tareas cronológicamente
+            // Ordenar cronológicamente todas las tareas
             const container = document.getElementById('lista-tareas');
             const cardsArray = Array.from(container.children);
             cardsArray.sort((a, b) => {
@@ -195,8 +235,22 @@
             container.innerHTML = '';
             cardsArray.forEach(card => container.appendChild(card));
 
-            // Actualizar el color (Completado, Progreso, Pendiente)
+            // Filtrar tareas puntuales por fecha y actualizar estados
             document.querySelectorAll('.task-card').forEach(card => {
+                if (card.classList.contains('daily-task')) {
+                    const baseUrl = card.getAttribute('data-base-url');
+                    card.setAttribute('href', `${baseUrl}?fecha=${selectedISO}`);
+                }
+
+                if (card.classList.contains('puntual-task')) {
+                    const cardFecha = card.getAttribute('data-fecha');
+                    if (cardFecha === selectedISO) {
+                        card.classList.remove('hidden');
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                }
+
                 const badge = card.querySelector('.task-badge');
                 const start = card.getAttribute('data-start');
                 const end = card.getAttribute('data-end');
@@ -221,47 +275,6 @@
             });
         }
 
-        // --- MANEJO DE CREACIÓN DE NUEVA TAREA ---
-        document.getElementById('form-nueva-tarea').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const nombre = document.getElementById('t-nombre').value;
-            const inicio = document.getElementById('t-inicio').value;
-            const fin = document.getElementById('t-fin').value;
-            
-            // Recoger todos los usuarios seleccionados del Select múltiple
-            const selectOptions = document.getElementById('t-asignados').selectedOptions;
-            const asignadosArray = Array.from(selectOptions).map(opt => opt.value);
-            const asignadosTexto = asignadosArray.join(', ');
-
-            // Crear el código HTML de la nueva tarea
-            const nuevaTareaHTML = `
-            <a href="#" class="block group task-card" data-start="${inicio}" data-end="${fin}">
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
-                    <div class="bg-indigo-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-indigo-700 flex-shrink-0">
-                        <span class="font-bold text-sm">${inicio}</span>
-                        <span class="text-xs opacity-70">${fin}</span>
-                        <span class="text-xs font-semibold mt-2">PUNTUAL</span>
-                    </div>
-                    <div class="flex-1">
-                        <span class="task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 transition-colors">Cargando...</span>
-                        <h3 class="text-lg font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">${nombre}</h3>
-                        <p class="text-sm text-slate-500 mt-1">Encargado(s): ${asignadosTexto}</p>
-                        <p class="text-sm text-slate-500">Sector: Asignación Especial</p>
-                    </div>
-                </div>
-            </a>
-            `;
-
-            // Insertar la tarea en la pantalla
-            document.getElementById('lista-tareas').insertAdjacentHTML('beforeend', nuevaTareaHTML);
-            
-            // Reordenar automáticamente y actualizar colores
-            updateTasksStatus();
-            cerrarModal();
-        });
-
-
-        // --- FUNCIONES DEL CALENDARIO ---
         function renderWeek() {
             const container = document.getElementById("calendario-contenedor");
             container.innerHTML = "";
@@ -311,7 +324,6 @@
             renderWeek();
         });
 
-        // Inicio
         updateSubtitle();
         renderWeek();
     });
