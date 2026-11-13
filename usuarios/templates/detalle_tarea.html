@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Tarea - FundoTasks{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <!-- Botón Volver -->
+    <a href="{% url 'usuarios:tareas' %}" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-emerald-600 mb-6 transition-colors">
+        <span class="mr-2">&larr;</span> Volver a mis tareas
+    </a>
+
+    <!-- Tarjeta de Detalle -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <!-- Cabecera de la tarea -->
+        <div class="bg-{{ tarea.color }}-50 p-6 border-b border-{{ tarea.color }}-100 flex justify-between items-start">
+            <div>
+                <span class="inline-block bg-{{ tarea.color }}-200 text-{{ tarea.color }}-800 text-xs font-bold px-2 py-1 rounded mb-3 uppercase tracking-wider">
+                    PRIORIDAD {{ tarea.prioridad }}
+                </span>
+                <h1 class="text-2xl font-bold text-slate-900">{{ tarea.titulo }}</h1>
+                <p class="text-slate-600 mt-1 flex items-center gap-2">
+                    🕒 {{ tarea.horario }}
+                </p>
+            </div>
+            
+            <div class="text-right">
+                <span class="text-sm font-bold px-3 py-1.5 rounded-lg border 
+                    {% if tarea.estado == 'Completada' %} bg-emerald-50 text-emerald-700 border-emerald-200
+                    {% elif tarea.estado == 'En Progreso' %} bg-blue-50 text-blue-700 border-blue-200
+                    {% else %} bg-slate-100 text-slate-600 border-slate-200 {% endif %}">
+                    {{ tarea.estado }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Cuerpo de información -->
+        <div class="p-6 space-y-6">
+            <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div>
+                    <span class="block text-xs font-semibold text-slate-500 uppercase">Encargado</span>
+                    <span class="font-medium text-slate-800">{{ user.nombre|default:user.username }}</span>
+                </div>
+                <div>
+                    <span class="block text-xs font-semibold text-slate-500 uppercase">Sector</span>
+                    <span class="font-medium text-slate-800">{{ tarea.sector }}</span>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-sm font-bold text-slate-800 mb-2 border-b border-slate-100 pb-2">Instrucciones de la labor</h3>
+                <p class="text-slate-600 leading-relaxed text-sm">
+                    {{ tarea.descripcion }}
+                </p>
+            </div>
+            
+            <!-- NUEVA SECCIÓN DE NOTAS -->
+            <div class="mt-6 border-t border-slate-100 pt-6">
+                <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    📝 Notas y Observaciones
+                </h3>
+                <textarea rows="4" class="block w-full rounded-xl border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-3 bg-slate-50 placeholder-slate-400" placeholder="Escribe aquí si hubo alguna anomalía, animales enfermos, daños en mangueras o falta de insumos..."></textarea>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="pt-4 flex justify-end gap-3">
+                <button class="px-5 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors">
+                    Reportar Incidencia
+                </button>
+                <button class="px-5 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 shadow-sm transition-colors">
+                    Guardar y Finalizar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

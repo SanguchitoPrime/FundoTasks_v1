@@ -12,11 +12,19 @@
     <form method="POST" action="{% url 'usuarios:register' %}" class="space-y-4">
         {% csrf_token %}
         
-        <div>
-            <label for="nombre" class="block text-sm font-medium text-slate-700 mb-1">Nombre Completo</label>
-            <input type="text" name="nombre" id="nombre" required 
-                   class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-2 border" 
-                   placeholder="Juan Pérez">
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label for="nombre" class="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+                <input type="text" name="nombre" id="nombre" required 
+                       class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-2 border" 
+                       placeholder="Juan">
+            </div>
+            <div>
+                <label for="apellido" class="block text-sm font-medium text-slate-700 mb-1">Apellido</label>
+                <input type="text" name="apellido" id="apellido" required 
+                       class="block w-full rounded-md border-slate-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-2 border" 
+                       placeholder="Pérez">
+            </div>
         </div>
 
         <div>

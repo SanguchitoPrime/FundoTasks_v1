@@ -3,7 +3,64 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from .models import Usuario  # <-- Importante para poder crear usuarios
+from .models import Usuario, Personal, Asistencia, Tarea, AsignacionTarea, Cisterna
+from datetime import datetime
+
+@login_required(login_url='/login/')
+def mis_tareas_view(request):
+    # 1. Buscamos TODOS los usuarios en la base de datos
+    usuarios = Usuario.objects.all()
+    
+    # 2. Se los enviamos al HTML empaquetados en el diccionario
+    return render(request, 'tareas.html', {'usuarios': usuarios})
+
+@login_required(login_url='/login/')
+def detalle_tarea_view(request, tarea_id):
+    # Obtenemos la hora actual del sistema
+    now = datetime.now()
+    current_time = now.strftime("%H:%M")
+    
+    # Función interna para calcular el estado
+    def get_status(start, end):
+        if current_time > end: return 'Completada'
+        elif start <= current_time <= end: return 'En Progreso'
+        return 'Pendiente'
+
+    tareas_diarias = {
+        1: {
+            'titulo': 'Ordeña (Turno Mañana)',
+            'horario': '05:00 - 07:00',
+            'prioridad': 'ALTA',
+            'estado': get_status('05:00', '07:00'),
+            'sector': 'Sala de Ordeña Principal',
+            'descripcion': 'Proceso de ordeña matutina de todo el rebaño lechero. Incluye preparación de ubres, colocación de pezoneras, monitoreo de flujo y limpieza post-ordeño de los equipos.',
+            'color': 'rose'
+        },
+        2: {
+            'titulo': 'Limpieza Patios y Corrales',
+            'horario': '09:00 - 12:00',
+            'prioridad': 'MEDIA',
+            'estado': get_status('09:00', '12:00'),
+            'sector': 'Corrales 1 al 4',
+            'descripcion': 'Remoción de estiércol mediante tractor rascador, lavado de patios de alimentación y corrales de espera. Revisión y limpieza de los bebederos automáticos.',
+            'color': 'amber'
+        },
+        3: {
+            'titulo': 'Ordeña (Turno Tarde)',
+            'horario': '14:00 - 16:00',
+            'prioridad': 'ALTA',
+            'estado': get_status('14:00', '16:00'),
+            'sector': 'Sala de Ordeña Principal',
+            'descripcion': 'Segundo turno de ordeña del día. Mismo protocolo de higiene e inspección visual de las vacas que en el turno de la mañana.',
+            'color': 'rose'
+        }
+    }
+    
+    tarea = tareas_diarias.get(tarea_id)
+    if not tarea:
+        return redirect('usuarios:tareas')
+        
+    return render(request, 'detalle_tarea.html', {'tarea': tarea})
 
 # --- Función para validar RUT chileno ---
 def validar_rut(rut):
@@ -35,29 +92,25 @@ def inicio_view(request):
 # 2. Vista para registrar usuarios
 def registro_usuarios(request):
     if request.method == 'POST':
+        # Recibimos el nombre y apellido por separado
         nombre = request.POST.get('nombre')
+        apellido = request.POST.get('apellido')
+        
+        # Los unimos en una sola variable con un espacio en medio
+        nombre_completo = f"{nombre} {apellido}"
+        
         rut = request.POST.get('rut')
         correo = request.POST.get('correo')
         contrasena = request.POST.get('password')
         
-        # Validar el RUT
-        if not validar_rut(rut):
-            messages.error(request, 'El RUT ingresado no es válido.')
-            return render(request, 'register.html')
-            
-        # Verificar si ya existe el RUT
-        if Usuario.objects.filter(rut=rut).exists() or Usuario.objects.filter(username=rut).exists():
-            messages.error(request, 'Ya existe una cuenta con este RUT.')
-            return render(request, 'register.html')
-            
-        # Crear usuario (usamos el RUT como username interno)
         user = Usuario.objects.create_user(
             username=rut,
             email=correo,
             password=contrasena,
             rut=rut,
-            nombre=nombre,
-            first_name=nombre,
+            nombre=nombre_completo, # Nuestro campo personalizado
+            first_name=nombre,      # Campo interno de Django
+            last_name=apellido,     # Campo interno de Django
             cargo='Empleado'
         )
         
@@ -67,21 +120,32 @@ def registro_usuarios(request):
     return render(request, 'register.html')
 
 # 3. Vista con la lógica de inicio de sesión
+# Vista con la Lógica de inicio de sesión
 def iniciar_usuarios(request):
     if request.method == 'POST':
-        correo = request.POST.get('correo')
+        identificador = request.POST.get('correo') # Este campo recibe RUT o Correo
         contrasena = request.POST.get('password')
         
-        # Verifica si el usuario y la contraseña coinciden en la BD
-        user = authenticate(request, username=correo, password=contrasena)
+        # Por defecto, asumimos que el usuario escribió su RUT
+        username_real = identificador 
         
+        # Si lo que escribió tiene un '@', sabemos que es un correo
+        if '@' in identificador:
+            # Buscamos en la base de datos al usuario que tenga ese correo
+            usuario_encontrado = Usuario.objects.filter(email=identificador).first()
+            if usuario_encontrado:
+                # Si lo encuentra, sacamos su RUT interno para poder loguearlo
+                username_real = usuario_encontrado.username
+
+        # Ahora sí, verificamos con Django usando el username_real (que siempre será el RUT)
+        user = authenticate(request, username=username_real, password=contrasena)
+
         if user is not None:
             login(request, user)
-            # Redirige a inicio_view una vez que el login es exitoso
-            return redirect('usuarios:inicio') 
+            return redirect('usuarios:inicio')
         else:
-            messages.error(request, 'Correo o contraseña incorrectos.')
-            
+            messages.error(request, 'RUT/Correo o contraseña incorrectos.')
+
     return render(request, 'login.html')
 
 @login_required(login_url='/login/')

@@ -43,28 +43,88 @@
 
             <!-- Lista de Tareas (Estilo Tarjetas) -->
             <div class="space-y-4">
-                <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md transition-all">
-                    <div class="flex items-start gap-4">
-                        <div class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded mt-1">ALTA</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800">Verificar nivel del estanque y sensores IoT</h4>
-                            <p class="text-sm text-slate-500">Sector: Estanque Principal</p>
+                <!-- Tarea 1: Ordeña Mañana -->
+                <a href="{% url 'usuarios:detalle_tarea' 1 %}" class="block group task-card-hoy" data-start="05:00" data-end="07:00">
+                    <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 group-hover:bg-white group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
+                        <div class="flex items-start gap-4">
+                            <div class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded mt-1">ALTA</div>
+                            <div>
+                                <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
+                                <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Ordeña (Turno Mañana)</h4>
+                                <p class="text-sm text-slate-500">Sector: Sala de Ordeña</p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </a>
 
-                <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md transition-all">
-                    <div class="flex items-start gap-4">
-                        <div class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded mt-1">MEDIA</div>
-                        <div>
-                            <h4 class="font-bold text-slate-800">Inspección de líneas de riego por goteo</h4>
-                            <p class="text-sm text-slate-500">Sector: Norte - Manzanos</p>
+                <!-- Tarea 2: Limpieza -->
+                <a href="{% url 'usuarios:detalle_tarea' 2 %}" class="block group task-card-hoy" data-start="09:00" data-end="12:00">
+                    <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 group-hover:bg-white group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
+                        <div class="flex items-start gap-4">
+                            <div class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded mt-1">MEDIA</div>
+                            <div>
+                                <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
+                                <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Limpieza Patios y Corrales</h4>
+                                <p class="text-sm text-slate-500">Sector: Corrales 1 al 4</p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </a>
+
+                <!-- Tarea 3: Ordeña Tarde -->
+                <a href="{% url 'usuarios:detalle_tarea' 3 %}" class="block group task-card-hoy" data-start="14:00" data-end="16:00">
+                    <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 group-hover:bg-white group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
+                        <div class="flex items-start gap-4">
+                            <div class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded mt-1">ALTA</div>
+                            <div>
+                                <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
+                                <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Ordeña (Turno Tarde)</h4>
+                                <p class="text-sm text-slate-500">Sector: Sala de Ordeña</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
             </div>
         </div>
     </div>
 
 </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Obtener hora actual en formato HH:MM
+        const now = new Date();
+        const currentHour = now.getHours().toString().padStart(2, '0');
+        const currentMin = now.getMinutes().toString().padStart(2, '0');
+        const currentTimeStr = `${currentHour}:${currentMin}`;
+
+        // Recorrer las tareas del Dashboard
+        document.querySelectorAll('.task-card-hoy').forEach(card => {
+            const badge = card.querySelector('.badge-estado');
+            const start = card.getAttribute('data-start');
+            const end = card.getAttribute('data-end');
+            
+            let status = "";
+            if (currentTimeStr > end) {
+                status = "Completada";
+            } else if (currentTimeStr >= start && currentTimeStr <= end) {
+                status = "En Progreso";
+            } else {
+                status = "Pendiente";
+            }
+
+            // Aplicar colores según estado
+            if (status === "Completada") {
+                badge.className = "badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 uppercase tracking-wider bg-emerald-50 text-emerald-600 border-emerald-200";
+            } else if (status === "En Progreso") {
+                badge.className = "badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 uppercase tracking-wider bg-blue-50 text-blue-600 border-blue-200 animate-pulse";
+            } else {
+                badge.className = "badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 uppercase tracking-wider bg-slate-100 text-slate-500 border-slate-200";
+            }
+            
+            badge.textContent = status;
+        });
+    });
+</script>
 {% endblock %}

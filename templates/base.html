@@ -6,6 +6,26 @@
     <title>{% block title %}FundoTasks{% endblock %}</title>
     <!-- Tailwind CSS corregido con el CDN para que cargue los estilos -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Estilos Maestros para el Modo Oscuro -->
+    <style>
+        html.dark { background-color: #0f172a; color: #f8fafc; }
+        html.dark body { background-color: #0f172a; }
+        html.dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
+        html.dark .text-slate-900, html.dark .text-slate-800, html.dark .text-slate-700 { color: #f8fafc !important; }
+        html.dark .text-slate-600, html.dark .text-slate-500 { color: #94a3b8 !important; }
+        html.dark .bg-slate-50, html.dark .bg-slate-100, html.dark .bg-slate-200 { background-color: #0f172a !important; border-color: #334155 !important; }
+        html.dark header { background-color: rgba(30, 41, 59, 0.9) !important; border-bottom-color: #334155 !important; }
+        html.dark input, html.dark textarea { background-color: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+        html.dark .border-slate-100, html.dark .border-slate-200 { border-color: #334155 !important; }
+        html.dark .shadow-sm, html.dark .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important; }
+    </style>
+
+    <!-- Memoria del Modo Oscuro -->
+    <script>
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
     {% block extra_head %}{% endblock %}
 </head>
 <body class="flex flex-col h-full font-sans antialiased">
@@ -33,8 +53,16 @@
             <!-- Botones de Acción / Usuario -->
             <div class="flex items-center gap-4">
                 {% if user.is_authenticated %}
-                    <span class="text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full">
+                    <!-- Saludo dinámico con validación de rol -->
+                    <span class="flex items-center gap-2 text-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-full shadow-sm">
                         Hola, {% if user.nombre %}{{ user.nombre }}{% else %}{{ user.username }}{% endif %} 👋
+                        
+                        <!-- Si el usuario es Administrador, mostramos esta etiqueta -->
+                        {% if user.cargo == 'Administrador' %}
+                            <span class="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase tracking-wider shadow-inner">
+                                Administrador
+                            </span>
+                        {% endif %}
                     </span>
                     <a href="{% url 'usuarios:logout' %}" class="text-sm font-medium text-slate-600 hover:text-red-500 transition-colors">Salir</a>
                 {% else %}

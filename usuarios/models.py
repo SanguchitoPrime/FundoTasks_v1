@@ -1,6 +1,25 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
+@receiver(post_save, sender=Usuario)
+def sincronizar_personal(sender, instance, created, **kwargs):
+    if created:
+        # Si el usuario es nuevo, creamos su registro en Personal
+        Personal.objects.create(
+            rut=instance.rut or instance.username,
+            nombre=instance.nombre or instance.username,
+            cargo=instance.cargo,
+            estado='Activo'
+        )
+    else:
+        # Si el usuario se actualizó (ej. le cambiaste el cargo a Admin), actualizamos Personal
+        personal = Personal.objects.filter(rut=instance.rut or instance.username).first()
+        if personal:
+            personal.nombre = instance.nombre or instance.username
+            personal.cargo = instance.cargo
+            personal.save()
 # 1. Modelo de Usuario (Autenticación y Roles)
 class Usuario(AbstractUser):
     OPCIONES_CARGO = (
@@ -16,6 +35,7 @@ class Usuario(AbstractUser):
 
 
 # 2. Modelo de Personal (Trabajadores del predio)
+# 2. Modelo de Personal (Trabajadores del predio)
 class Personal(models.Model):
     idPersonal = models.AutoField(primary_key=True)
     nombre = models.CharField(max_length=40)
@@ -25,6 +45,11 @@ class Personal(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.rut})"
+        
+    # Añade esto para arreglar el nombre en el panel de admin
+    class Meta:
+        verbose_name = "Personal"
+        verbose_name_plural = "Personal"
 
 
 # 3. Modelo de Asistencia diaria del personal
