@@ -5,7 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q
 from django.urls import reverse
-from .models import Usuario, Personal, Tarea, AsignacionTarea
+from .models import Usuario, Personal
+from tareas.models import Tarea, AsignacionTarea
 
 
 # --- Funciones auxiliares de RUT ---
