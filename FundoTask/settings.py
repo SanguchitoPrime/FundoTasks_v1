@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-jct&=d^bv7%pjs$768-p+zj#*b9r691+i34_f3t9_3)n0pwwkz
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["192.168.1.3", "localhost", "127.0.0.1"]
 
 
 # Application definition
@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'usuarios',
     'cisterna',
-    'tareas'
+    'tareas',
+    'sensores'
 ]
 
 MIDDLEWARE = [
@@ -86,7 +87,16 @@ DATABASES = {
         "PASSWORD": config("DB_PASSWORD"),
         "HOST": config("DB_HOST", default="127.0.0.1"),
         "PORT": config("DB_PORT", default="1521"),
-    }
+    },
+    "supabase": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": config("SUPABASE_NAME", default="postgres"),
+        "USER": config("SUPABASE_USER"),
+        "PASSWORD": config("SUPABASE_PASSWORD"),
+        "HOST": config("SUPABASE_HOST"),
+        "PORT": config("SUPABASE_PORT", default="5432"),
+        "OPTIONS": {"sslmode": "require"},
+    },
 }
 
 
