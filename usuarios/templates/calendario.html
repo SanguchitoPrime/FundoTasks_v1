@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+{% block title %}Calendario Mensual - FundoTasks{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+
+    <!-- ENCABEZADO + NAVEGACIÓN DE MES -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+            <h1 class="text-2xl font-extrabold text-slate-900">{{ titulo_mes }}</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Selecciona un día para ver el resumen de rutinas y tareas puntuales</p>
+        </div>
+
+        <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1 shadow-xs self-start sm:self-auto">
+            <a href="?mes={{ prev_mes_iso }}" class="text-slate-500 hover:text-emerald-600 font-bold px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors">
+                &lt;
+            </a>
+            <a href="{% url 'usuarios:calendario' %}" class="text-emerald-600 hover:text-emerald-700 text-xs font-extrabold px-2.5 py-1 rounded-lg hover:bg-emerald-50 transition-colors">
+                Hoy
+            </a>
+            <a href="?mes={{ next_mes_iso }}" class="text-slate-500 hover:text-emerald-600 font-bold px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors">
+                &gt;
+            </a>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL: CALENDARIO (IZQUIERDA) + RESUMEN COMPACTO (DERECHA) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- ============================================================= -->
+        <!-- COLUMNA IZQUIERDA (8/12): CALENDARIO MENSUAL COMPLETO         -->
+        <!-- ============================================================= -->
+        <div class="lg:col-span-8 space-y-3">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <!-- Días de la semana -->
+                <div class="grid grid-cols-7 border-b border-slate-100 bg-slate-50/80 text-center py-2.5">
+                    <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Lun</span>
+                    <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Mar</span>
+                    <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Mié</span>
+                    <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Jue</span>
+                    <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Vie</span>
+                    <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Sáb</span>
+                    <span class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Dom</span>
+                </div>
+
+                <!-- Cuadrícula de semanas -->
+                <div class="divide-y divide-slate-100">
+                    {% for semana in semanas_calendario %}
+                    <div class="grid grid-cols-7 divide-x divide-slate-100">
+                        {% for celda in semana %}
+                        <button type="button"
+                            onclick="seleccionarDiaCalendario('{{ celda.fecha_iso }}')"
+                            data-fecha="{{ celda.fecha_iso }}"
+                            class="dia-celda group relative h-20 pt-2 pb-1.5 flex flex-col items-center justify-between transition-colors cursor-pointer focus:outline-none
+                            {% if celda.es_mes_actual %} bg-white hover:bg-emerald-50/40 {% else %} bg-slate-50/50 hover:bg-slate-100/60 {% endif %}">
+
+                            <!-- Número del día -->
+                            <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all
+                                {% if celda.es_hoy %}
+                                    bg-emerald-600 text-white shadow-xs
+                                {% elif celda.es_mes_actual %}
+                                    text-slate-800 group-hover:text-emerald-700
+                                {% else %}
+                                    text-slate-400
+                                {% endif %}">
+                                {{ celda.dia }}
+                            </span>
+
+                            <!-- 3 niveles de indicadores debajo del número -->
+                            <div class="w-full flex flex-col items-center gap-1">
+
+                                <!-- Nivel 1 (Arriba): Puntito verde si una tarea puntual se completó el mismo día -->
+                                <div class="h-1.5 flex items-center justify-center">
+                                    {% if celda.tiene_puntual_mismo_dia %}
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    {% else %}
+                                        <span class="w-1.5 h-1.5 rounded-full bg-transparent"></span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Nivel 2 (Medio): Puntito de Tareas Diarias (Verde = 3/3, Amarillo = faltan) -->
+                                <div class="h-2 flex items-center justify-center">
+                                    {% if celda.punto_diario == 'green' %}
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                    {% elif celda.punto_diario == 'yellow' %}
+                                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                                    {% else %}
+                                        <span class="w-2 h-2 rounded-full bg-transparent"></span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Nivel 3 (Abajo): Óvalo largo (2+ días) o punto azul (1 día en proceso) -->
+                                <div class="relative w-full h-2 flex items-center justify-center">
+                                    {% if celda.indicador_inferior %}
+                                        {% if not celda.indicador_inferior.es_multidia %}
+                                            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                        {% else %}
+                                            <span class="absolute z-10 h-2
+                                                {% if celda.indicador_inferior.color == 'blue' %} bg-blue-500 {% else %} bg-emerald-500 {% endif %}
+                                                {% if celda.indicador_inferior.es_inicio and celda.indicador_inferior.es_fin %}
+                                                    left-2.5 right-2.5 rounded-full
+                                                {% elif celda.indicador_inferior.es_inicio %}
+                                                    left-1/2 -ml-1 -right-[1px] rounded-l-full
+                                                {% elif celda.indicador_inferior.es_fin %}
+                                                    -left-[1px] right-1/2 -mr-1 rounded-r-full
+                                                {% else %}
+                                                    -left-[1px] -right-[1px]
+                                                {% endif %}">
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+
+                            </div>
+                        </button>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Leyenda compacta al pie del calendario -->
+            <div class="bg-white rounded-xl px-4 py-2.5 border border-slate-200 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[11px] text-slate-600">
+                <span class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Diarias completas / Puntual en el día
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    Diarias pendientes
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-5 h-2 rounded-full bg-blue-500"></span>
+                    En proceso (1 o varios días)
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-5 h-2 rounded-full bg-emerald-500"></span>
+                    Completada (varios días)
+                </span>
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- COLUMNA DERECHA (4/12): RESUMEN COMPACTO DEL DÍA (3 BLOQUES)  -->
+        <!-- ============================================================= -->
+        <aside class="lg:col-span-4 space-y-3 lg:sticky lg:top-6">
+
+            <!-- Cabecera del día seleccionado -->
+            <div class="bg-white rounded-xl px-4 py-3 border border-slate-200 shadow-xs flex items-center justify-between gap-2">
+                <h2 id="detalle-dia-titulo" class="text-sm font-extrabold text-slate-900 truncate">
+                    Cargando...
+                </h2>
+                <a id="detalle-dia-link" href="{% url 'usuarios:tareas' %}"
+                    class="text-xs font-extrabold text-emerald-600 hover:text-emerald-700 whitespace-nowrap">
+                    Ir a Tareas &rarr;
+                </a>
+            </div>
+
+            <!-- BLOQUE 1: TAREAS DIARIAS -->
+            <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">
+                        Tareas Diarias
+                    </h3>
+                    <span id="badge-diarias" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                        0/3
+                    </span>
+                </div>
+
+                <div id="contenedor-diarias" class="space-y-1.5">
+                    <!-- Generado dinámicamente por JS -->
+                </div>
+            </div>
+
+            <!-- BLOQUE 2: TAREAS EN PROCESO -->
+            <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-[11px] font-extrabold text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                        En Proceso
+                    </h3>
+                    <span id="badge-proceso" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                        0
+                    </span>
+                </div>
+
+                <div id="contenedor-proceso" class="space-y-1.5">
+                    <!-- Generado dinámicamente por JS -->
+                </div>
+            </div>
+
+            <!-- BLOQUE 3: TAREAS HECHAS ESE DÍA -->
+            <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-[11px] font-extrabold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        Hechas ese día
+                    </h3>
+                    <span id="badge-hechas" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
+                        0
+                    </span>
+                </div>
+
+                <div id="contenedor-hechas" class="space-y-1.5">
+                    <!-- Generado dinámicamente por JS -->
+                </div>
+            </div>
+
+        </aside>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const resumenDias = {{ resumen_dias_json|safe }};
+    const hoyISO = "{{ hoy_iso }}";
+
+    function seleccionarDiaCalendario(fechaISO) {
+        document.querySelectorAll('.dia-celda').forEach(el => {
+            if (el.getAttribute('data-fecha') === fechaISO) {
+                el.classList.add('ring-2', 'ring-inset', 'ring-emerald-500', 'bg-emerald-50/30');
+            } else {
+                el.classList.remove('ring-2', 'ring-inset', 'ring-emerald-500', 'bg-emerald-50/30');
+            }
+        });
+
+        const info = resumenDias[fechaISO];
+        if (!info) return;
+
+        document.getElementById('detalle-dia-titulo').textContent = info.fecha_texto;
+        document.getElementById('detalle-dia-link').href = info.url_tareas;
+
+        // 1. Bloque Tareas Diarias
+        const badgeDiarias = document.getElementById('badge-diarias');
+        const contDiarias = document.getElementById('contenedor-diarias');
+
+        if (info.diarias_todas_hechas) {
+            badgeDiarias.textContent = '3/3 Hechas';
+            badgeDiarias.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700';
+            contDiarias.innerHTML = `
+                <div class="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-center gap-2 text-xs font-bold text-emerald-700">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <span>Todas las tareas diarias hechas</span>
+                </div>
+            `;
+        } else {
+            badgeDiarias.textContent = `${info.diarias_completadas}/3`;
+            badgeDiarias.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700';
+            contDiarias.innerHTML = info.diarias_lista.map(d => {
+                if (d.completada) {
+                    return `
+                        <div class="px-3 py-2 rounded-xl bg-emerald-50/50 border border-emerald-100 flex items-center justify-between gap-2 text-xs">
+                            <span class="font-semibold text-slate-500 line-through truncate">${d.titulo}</span>
+                            <span class="text-[10px] font-bold text-emerald-600 flex-shrink-0">Hecha</span>
+                        </div>
+                    `;
+                }
+                return `
+                    <div class="px-3 py-2 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2 text-xs">
+                        <span class="font-bold text-slate-700 truncate">${d.titulo}</span>
+                        <span class="text-[10px] font-semibold text-amber-600 flex-shrink-0">${d.horario}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 2. Bloque Tareas En Proceso
+        const badgeProceso = document.getElementById('badge-proceso');
+        const contProceso = document.getElementById('contenedor-proceso');
+        badgeProceso.textContent = info.en_proceso_lista.length;
+
+        if (info.en_proceso_lista.length > 0) {
+            contProceso.innerHTML = info.en_proceso_lista.map(t => {
+                const diasTxt = t.dias >= 2 ? `Día ${t.dias}` : 'Hoy';
+                return `
+                    <div class="px-3 py-2 rounded-xl bg-blue-50/60 border border-blue-200/80 flex items-center justify-between gap-2 text-xs">
+                        <div class="min-w-0">
+                            <p class="font-bold text-slate-800 truncate">${t.titulo}</p>
+                            <p class="text-[10px] text-slate-500 truncate">${t.sector}</p>
+                        </div>
+                        <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-blue-100 text-blue-700 flex-shrink-0">
+                            ${diasTxt}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            contProceso.innerHTML = `<p class="text-xs text-slate-400 py-1">Sin tareas en proceso.</p>`;
+        }
+
+        // 3. Bloque Tareas Hechas ese día
+        const badgeHechas = document.getElementById('badge-hechas');
+        const contHechas = document.getElementById('contenedor-hechas');
+        badgeHechas.textContent = info.completadas_lista.length;
+
+        if (info.completadas_lista.length > 0) {
+            contHechas.innerHTML = info.completadas_lista.map(t => {
+                const tag = t.mismo_dia ? 'En el día' : `${t.dias} días`;
+                return `
+                    <div class="px-3 py-2 rounded-xl bg-emerald-50/60 border border-emerald-200/80 flex items-center justify-between gap-2 text-xs">
+                        <div class="min-w-0">
+                            <p class="font-bold text-slate-800 truncate">${t.titulo}</p>
+                            <p class="text-[10px] text-slate-500 truncate">${t.sector}</p>
+                        </div>
+                        <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 flex-shrink-0">
+                            ${tag}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            contHechas.innerHTML = `<p class="text-xs text-slate-400 py-1">Sin tareas puntuales cerradas este día.</p>`;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (resumenDias[hoyISO]) {
+            seleccionarDiaCalendario(hoyISO);
+        } else {
+            const primeraFecha = Object.keys(resumenDias)[0];
+            if (primeraFecha) seleccionarDiaCalendario(primeraFecha);
+        }
+    });
+</script>
+{% endblock %}

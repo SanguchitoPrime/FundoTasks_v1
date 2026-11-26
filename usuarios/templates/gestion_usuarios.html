@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% block title %}Personal y Usuarios - FundoTasks{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- ENCABEZADO -->
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900">Personal y Usuarios</h1>
+        <p class="text-sm text-slate-500 mt-0.5">Trabajadores registrados en el Fundo San Carlos</p>
+    </div>
+
+    <!-- MENSAJES DE FEEDBACK -->
+    {% if messages %}
+    <div class="space-y-2">
+        {% for message in messages %}
+        <div class="px-4 py-3 rounded-xl text-sm font-semibold border
+            {% if message.tags == 'error' %} bg-rose-50 text-rose-700 border-rose-200
+            {% else %} bg-emerald-50 text-emerald-700 border-emerald-200 {% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ================================================================= -->
+    <!-- APARTADO 1: USUARIO CONECTADO ACTUALMENTE                         -->
+    <!-- ================================================================= -->
+    {% if usuario_actual %}
+    <section class="space-y-2.5">
+        <div class="flex items-center justify-between">
+            <h2 class="text-xs font-extrabold text-emerald-700 uppercase tracking-wider flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Usuario Conectado (Tu Cuenta)
+            </h2>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border-2 border-emerald-200 overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider bg-emerald-50/40">
+                        <th class="py-3.5 px-5">Nombre</th>
+                        <th class="py-3.5 px-5">RUT</th>
+                        <th class="py-3.5 px-5">Correo</th>
+                        <th class="py-3.5 px-5">Rol</th>
+                        <th class="py-3.5 px-5">Estado</th>
+                        <th class="py-3.5 px-5 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                    <tr class="hover:bg-slate-50/60 transition-colors">
+                        <td class="py-4 px-5 font-bold text-slate-800">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-emerald-600 text-white font-extrabold text-xs flex items-center justify-center flex-shrink-0">
+                                    {{ usuario_actual.nombre|default:usuario_actual.username|make_list|first|upper }}
+                                </div>
+                                <div>
+                                    <span>{{ usuario_actual.idPersonal.nombre|default:usuario_actual.nombre|default:usuario_actual.username }}</span>
+                                    <span class="ml-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Tú</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-4 px-5 text-slate-600 font-medium">
+                            {{ usuario_actual.idPersonal.rut|default:usuario_actual.username }}
+                        </td>
+                        <td class="py-4 px-5 text-slate-600">
+                            {{ usuario_actual.correo|default:usuario_actual.email|default:"Sin correo" }}
+                        </td>
+                        <td class="py-4 px-5">
+                            <span class="text-xs font-bold px-3 py-1 rounded-full
+                                {% if usuario_actual.cargo == 'Administrador' %} bg-emerald-100 text-emerald-700
+                                {% elif usuario_actual.cargo == 'Secretario' %} bg-indigo-100 text-indigo-700
+                                {% else %} bg-slate-100 text-slate-700 {% endif %}">
+                                {{ usuario_actual.cargo }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-5">
+                            {% with est=usuario_actual.idPersonal.estado|default:"Activo" %}
+                            <span class="text-xs font-bold px-3 py-1 rounded-full
+                                {% if est == 'Activo' %} bg-emerald-50 text-emerald-600
+                                {% else %} bg-rose-50 text-rose-600 {% endif %}">
+                                {{ est }}
+                            </span>
+                            {% endwith %}
+                        </td>
+                        <td class="py-4 px-5 text-right">
+                            <button type="button"
+                                onclick="abrirPanelEditarUsuario(this)"
+                                data-editar-url="{% url 'usuarios:editar_usuario' usuario_actual.pk %}"
+                                data-nombre="{{ usuario_actual.idPersonal.nombre|default:usuario_actual.nombre|default:usuario_actual.username }}"
+                                data-rut="{{ usuario_actual.idPersonal.rut|default:usuario_actual.username }}"
+                                data-correo="{{ usuario_actual.correo|default:usuario_actual.email }}"
+                                data-rol="{{ usuario_actual.cargo }}"
+                                data-es-propio="true"
+                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                Editar
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- SEPARADOR VISUAL -->
+    <div class="border-t border-slate-200"></div>
+
+    <!-- ================================================================= -->
+    <!-- APARTADO 2: DEMÁS USUARIOS REGISTRADOS                            -->
+    <!-- ================================================================= -->
+    <section class="space-y-2.5">
+        <div class="flex items-center justify-between">
+            <h2 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">
+                Demás Usuarios del Equipo ({{ otros_usuarios|length }})
+            </h2>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-slate-100 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider bg-slate-50/70">
+                        <th class="py-3.5 px-5">Nombre</th>
+                        <th class="py-3.5 px-5">RUT</th>
+                        <th class="py-3.5 px-5">Correo</th>
+                        <th class="py-3.5 px-5">Rol</th>
+                        <th class="py-3.5 px-5">Estado</th>
+                        <th class="py-3.5 px-5 text-right">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-sm">
+                    {% for u in otros_usuarios %}
+                    <tr class="hover:bg-slate-50/70 transition-colors">
+                        <td class="py-4 px-5 font-bold text-slate-800">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center flex-shrink-0">
+                                    {{ u.idPersonal.nombre|default:u.nombre|default:u.username|make_list|first|upper }}
+                                </div>
+                                <span>{{ u.idPersonal.nombre|default:u.nombre|default:u.username }}</span>
+                            </div>
+                        </td>
+                        <td class="py-4 px-5 text-slate-600 font-medium">
+                            {{ u.idPersonal.rut|default:u.username }}
+                        </td>
+                        <td class="py-4 px-5 text-slate-600">
+                            {{ u.correo|default:u.email|default:"Sin correo" }}
+                        </td>
+                        <td class="py-4 px-5">
+                            <span class="text-xs font-bold px-3 py-1 rounded-full
+                                {% if u.cargo == 'Administrador' %} bg-emerald-100 text-emerald-700
+                                {% elif u.cargo == 'Secretario' %} bg-indigo-100 text-indigo-700
+                                {% else %} bg-slate-100 text-slate-700 {% endif %}">
+                                {{ u.cargo }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-5">
+                            {% with est=u.idPersonal.estado|default:"Activo" %}
+                            <span class="text-xs font-bold px-3 py-1 rounded-full
+                                {% if est == 'Activo' %} bg-emerald-50 text-emerald-600
+                                {% else %} bg-rose-50 text-rose-600 {% endif %}">
+                                {{ est }}
+                            </span>
+                            {% endwith %}
+                        </td>
+                        <td class="py-4 px-5 text-right">
+                            {% if u.cargo != 'Administrador' or user.cargo == 'Administrador' %}
+                            <button type="button"
+                                onclick="abrirPanelEditarUsuario(this)"
+                                data-editar-url="{% url 'usuarios:editar_usuario' u.pk %}"
+                                data-nombre="{{ u.idPersonal.nombre|default:u.nombre|default:u.username }}"
+                                data-rut="{{ u.idPersonal.rut|default:u.username }}"
+                                data-correo="{{ u.correo|default:u.email }}"
+                                data-rol="{{ u.cargo }}"
+                                data-es-propio="false"
+                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 transition-colors cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                Editar
+                            </button>
+                            {% else %}
+                            <span class="text-xs text-slate-400">Protegido</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-8 px-5 text-center text-sm text-slate-500">
+                            Aún no hay otros trabajadores registrados en el sistema.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+
+<!-- ================================================================= -->
+<!-- PANEL LATERAL: EDITAR USUARIO (CORREO Y ROL SECRETARIO)           -->
+<!-- ================================================================= -->
+<div id="drawer-editar-usuario" class="fixed inset-0 z-50 hidden">
+    <div onclick="cerrarPanelEditarUsuario()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity"></div>
+
+    <div class="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl border-l border-slate-200 flex flex-col justify-between z-10 overflow-y-auto">
+        <div>
+            <!-- Cabecera -->
+            <div class="bg-emerald-700 px-6 py-5 flex items-center justify-between">
+                <div>
+                    <h3 class="text-white font-extrabold text-lg">Editar Usuario</h3>
+                    <p id="edit-user-subtitulo" class="text-emerald-100 text-xs mt-0.5">Actualiza correo o permisos de acceso</p>
+                </div>
+                <button type="button" onclick="cerrarPanelEditarUsuario()" class="w-8 h-8 rounded-full bg-emerald-800/60 text-emerald-100 hover:text-white flex items-center justify-center text-xl leading-none cursor-pointer">
+                    &times;
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- Resumen del Trabajador -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+                    <div>
+                        <p id="edit-user-nombre" class="font-extrabold text-slate-800 text-base">-</p>
+                        <p id="edit-user-rut" class="text-xs text-slate-500 mt-0.5">RUT: -</p>
+                    </div>
+                    <span id="edit-user-rol-badge" class="text-xs font-bold px-3 py-1 rounded-full bg-slate-200 text-slate-700">
+                        -
+                    </span>
+                </div>
+
+                <!-- Formulario 1: Cambiar Correo Electrónico -->
+                <form method="POST" id="form-editar-correo" action="" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="guardar_datos">
+
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                            Correo Electrónico
+                        </label>
+                        <input type="email" name="correo" id="edit-user-correo" required
+                            class="w-full rounded-xl border-slate-300 text-sm p-3 border bg-slate-50 focus:bg-white focus:border-emerald-500 focus:ring-emerald-500"
+                            placeholder="correo@ejemplo.cl">
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit"
+                            class="px-5 py-2.5 text-sm font-extrabold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-sm transition-colors cursor-pointer">
+                            Guardar Correo
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Formulario 2: Cambio de Rol a Secretario (con Confirmación) -->
+                <div id="bloque-cambio-rol" class="pt-5 border-t border-slate-200 space-y-3">
+                    <div>
+                        <h4 class="text-xs font-extrabold text-slate-600 uppercase tracking-wider">
+                            Nivel de Acceso en el Sistema
+                        </h4>
+                        <p id="texto-descripcion-rol" class="text-xs text-slate-500 mt-1 leading-relaxed">
+                            El rol <strong>Secretario</strong> habilita funciones de supervisión y gestión operativa del fundo.
+                        </p>
+                    </div>
+
+                    <button type="button" id="btn-solicitar-rol" onclick="abrirModalConfirmacionRol()"
+                        class="w-full py-3 px-4 rounded-xl text-sm font-extrabold transition-colors flex items-center justify-center gap-2 cursor-pointer bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                        <span id="texto-btn-rol">Asignar como Secretario</span>
+                    </button>
+
+                    <form method="POST" id="form-cambiar-rol" action="" class="hidden">
+                        {% csrf_token %}
+                        <input type="hidden" name="accion" value="cambiar_rol">
+                        <input type="hidden" name="nuevo_rol" id="input-nuevo-rol" value="Secretario">
+                    </form>
+                </div>
+
+                <!-- Botón Cerrar Panel -->
+                <div class="pt-4 border-t border-slate-100 flex justify-end">
+                    <button type="button" onclick="cerrarPanelEditarUsuario()"
+                        class="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 cursor-pointer">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================================================================= -->
+<!-- MODAL DE CONFIRMACIÓN (CONFIRMAR / CANCELAR CAMBIO A SECRETARIO)  -->
+<!-- ================================================================= -->
+<div id="modal-confirmar-rol" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+    <div onclick="cerrarModalConfirmacionRol()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[2px]"></div>
+
+    <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-sm w-full p-6 z-10 space-y-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <div>
+                <h4 class="text-base font-extrabold text-slate-900">Confirmación</h4>
+                <p class="text-xs text-slate-500">Cambio de rol en FundoTasks</p>
+            </div>
+        </div>
+
+        <p id="mensaje-confirmacion-rol" class="text-sm text-slate-600 leading-relaxed">
+            ¿Confirmas asignar el rol de Secretario a este usuario?
+        </p>
+
+        <div class="pt-2 flex items-center justify-end gap-2.5">
+            <button type="button" onclick="cerrarModalConfirmacionRol()"
+                class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-white border border-slate-300 hover:bg-slate-50 cursor-pointer">
+                Cancelar
+            </button>
+            <button type="button" onclick="ejecutarCambioRol()"
+                class="px-5 py-2 rounded-xl text-sm font-extrabold text-white bg-indigo-600 hover:bg-indigo-500 shadow-sm cursor-pointer">
+                Confirmar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let nombreUsuarioSeleccionado = "";
+    let rolDestinoSeleccionado = "Secretario";
+
+    function abrirPanelEditarUsuario(btn) {
+        const drawer = document.getElementById('drawer-editar-usuario');
+        if (!drawer) return;
+
+        const editarUrl = btn.getAttribute('data-editar-url');
+        const nombre = btn.getAttribute('data-nombre') || '';
+        const rut = btn.getAttribute('data-rut') || '';
+        const correo = btn.getAttribute('data-correo') || '';
+        const rol = btn.getAttribute('data-rol') || 'Empleado';
+        const esPropio = btn.getAttribute('data-es-propio') === 'true';
+
+        nombreUsuarioSeleccionado = nombre;
+
+        document.getElementById('form-editar-correo').action = editarUrl;
+        document.getElementById('form-cambiar-rol').action = editarUrl;
+
+        document.getElementById('edit-user-nombre').textContent = nombre;
+        document.getElementById('edit-user-rut').textContent = `RUT: ${rut}`;
+        document.getElementById('edit-user-correo').value = correo;
+
+        const badge = document.getElementById('edit-user-rol-badge');
+        badge.textContent = rol;
+        badge.className = "text-xs font-bold px-3 py-1 rounded-full " + (
+            rol === 'Administrador' ? "bg-emerald-100 text-emerald-700" :
+            rol === 'Secretario' ? "bg-indigo-100 text-indigo-700" :
+            "bg-slate-200 text-slate-700"
+        );
+
+        const bloqueRol = document.getElementById('bloque-cambio-rol');
+        const btnRol = document.getElementById('btn-solicitar-rol');
+        const textoBtnRol = document.getElementById('texto-btn-rol');
+        const inputNuevoRol = document.getElementById('input-nuevo-rol');
+
+        if (esPropio || rol === 'Administrador') {
+            bloqueRol.classList.add('hidden');
+        } else {
+            bloqueRol.classList.remove('hidden');
+            if (rol === 'Secretario') {
+                rolDestinoSeleccionado = 'Empleado';
+                inputNuevoRol.value = 'Empleado';
+                textoBtnRol.textContent = 'Cambiar rol a Empleado';
+                btnRol.className = "w-full py-3 px-4 rounded-xl text-sm font-extrabold transition-colors flex items-center justify-center gap-2 cursor-pointer bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100";
+            } else {
+                rolDestinoSeleccionado = 'Secretario';
+                inputNuevoRol.value = 'Secretario';
+                textoBtnRol.textContent = 'Cambiar a Secretario';
+                btnRol.className = "w-full py-3 px-4 rounded-xl text-sm font-extrabold transition-colors flex items-center justify-center gap-2 cursor-pointer bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100";
+            }
+        }
+
+        drawer.classList.remove('hidden');
+    }
+
+    function cerrarPanelEditarUsuario() {
+        document.getElementById('drawer-editar-usuario')?.classList.add('hidden');
+        cerrarModalConfirmacionRol();
+    }
+
+    function abrirModalConfirmacionRol() {
+        const msg = document.getElementById('mensaje-confirmacion-rol');
+        if (rolDestinoSeleccionado === 'Secretario') {
+            msg.innerHTML = `¿Estás seguro de cambiar a <strong>${nombreUsuarioSeleccionado}</strong> al rol de <strong>Secretario</strong>? Tendrá permisos de gestión y supervisión en el sistema.`;
+        } else {
+            msg.innerHTML = `¿Estás seguro de cambiar el rol de <strong>${nombreUsuarioSeleccionado}</strong> de vuelta a <strong>Empleado</strong>?`;
+        }
+        document.getElementById('modal-confirmar-rol')?.classList.remove('hidden');
+    }
+
+    function cerrarModalConfirmacionRol() {
+        document.getElementById('modal-confirmar-rol')?.classList.add('hidden');
+    }
+
+    function ejecutarCambioRol() {
+        document.getElementById('form-cambiar-rol')?.submit();
+    }
+</script>
+{% endblock %}

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="max-w-2xl mx-auto">
     <!-- Botón Volver -->
-    <a href="{% url 'usuarios:tareas' %}" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-emerald-600 mb-6 transition-colors">
+    <a href="{% url 'usuarios:tareas' %}?fecha={{ tarea.fecha_iso }}" class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-emerald-600 mb-6 transition-colors">
         <span class="mr-2">&larr;</span> Volver a mis tareas
     </a>
 
@@ -15,25 +15,27 @@
         <div class="p-6 border-b flex justify-between items-start
             {% if tarea.color == 'rose' %} bg-rose-50 border-rose-100
             {% elif tarea.color == 'amber' %} bg-amber-50 border-amber-100
+            {% elif tarea.color == 'emerald' %} bg-emerald-50 border-emerald-100
             {% else %} bg-indigo-50 border-indigo-100 {% endif %}">
             <div>
-                <span class="inline-block text-xs font-bold px-2 py-1 rounded mb-3 uppercase tracking-wider
+                <span class="inline-block text-xs font-bold px-2.5 py-1 rounded mb-3 uppercase tracking-wider
                     {% if tarea.color == 'rose' %} bg-rose-200 text-rose-800
                     {% elif tarea.color == 'amber' %} bg-amber-200 text-amber-800
+                    {% elif tarea.color == 'emerald' %} bg-emerald-200 text-emerald-800
                     {% else %} bg-indigo-200 text-indigo-800 {% endif %}">
                     PRIORIDAD {{ tarea.prioridad }}
                 </span>
-                <h1 class="text-2xl font-bold text-slate-900">{{ tarea.titulo }}</h1>
-                <p class="text-slate-600 mt-1 flex items-center gap-2">
-                    🕒 {{ tarea.horario }}
+                <h1 class="text-2xl font-extrabold text-slate-900">{{ tarea.titulo }}</h1>
+                <p class="text-slate-600 mt-1 text-sm font-medium">
+                    {{ tarea.horario }}
                 </p>
             </div>
             
             <div class="text-right">
-                <span id="estado-pill" class="text-sm font-bold px-3 py-1.5 rounded-lg border 
+                <span class="text-sm font-bold px-3.5 py-1.5 rounded-xl border inline-block
                     {% if tarea.estado == 'Completada' %} bg-emerald-50 text-emerald-700 border-emerald-200
-                    {% elif tarea.estado == 'En Progreso' %} bg-blue-50 text-blue-700 border-blue-200
-                    {% else %} bg-slate-100 text-slate-600 border-slate-200 {% endif %}">
+                    {% elif tarea.estado == 'En Proceso' %} bg-blue-50 text-blue-700 border-blue-200
+                    {% else %} bg-amber-50 text-amber-700 border-amber-200 {% endif %}">
                     {{ tarea.estado }}
                 </span>
             </div>
@@ -41,63 +43,98 @@
 
         <!-- Cuerpo de información -->
         <div class="p-6 space-y-6">
+
+            <!-- 1. Trazabilidad y Datos Operativos -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                 <div>
-                    <span class="block text-xs font-semibold text-slate-500 uppercase">Encargado(s)</span>
-                    <span class="font-medium text-slate-800">{{ tarea.encargados|default:user.nombre }}</span>
+                    <span class="block text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Sector del Fundo</span>
+                    <span class="font-bold text-slate-800 text-sm mt-0.5 block">{{ tarea.sector }}</span>
                 </div>
                 <div>
-                    <span class="block text-xs font-semibold text-slate-500 uppercase">Sector</span>
-                    <span class="font-medium text-slate-800">{{ tarea.sector }}</span>
+                    <span class="block text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Tipo de Labor</span>
+                    <span class="font-bold text-slate-800 text-sm mt-0.5 block">{{ tarea.tipo_tarea }}</span>
+                </div>
+                <div>
+                    <span class="block text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Fecha de Inicio</span>
+                    <span class="font-semibold text-slate-700 text-sm mt-0.5 block">{{ tarea.fecha_inicio_texto }}</span>
+                </div>
+                <div>
+                    <span class="block text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Cierre y Duración</span>
+                    <span class="font-semibold text-slate-700 text-sm mt-0.5 block">{{ tarea.fecha_cierre_texto }} · {{ tarea.duracion_texto }}</span>
                 </div>
             </div>
 
+            <!-- 2. Instrucciones de la labor -->
             <div>
-                <h3 class="text-sm font-bold text-slate-800 mb-2 border-b border-slate-100 pb-2">Instrucciones de la labor</h3>
-                <p class="text-slate-600 leading-relaxed text-sm">
-                    {{ tarea.descripcion }}
-                </p>
-            </div>
-            
-            <!-- Sección de Notas y Observaciones -->
-            <div class="mt-6 border-t border-slate-100 pt-6">
-                <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-                    📝 Notas y Observaciones
+                <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider mb-2">
+                    Instrucciones de la Labor
                 </h3>
-                <textarea id="notas-tarea" rows="4" class="block w-full rounded-xl border-slate-200 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm p-3 bg-slate-50 placeholder-slate-400 border" placeholder="Escribe aquí si hubo alguna anomalía, animales enfermos, daños en mangueras o falta de insumos..."></textarea>
-                <p id="mensaje-nota" class="hidden text-xs font-semibold text-emerald-600 mt-2">✓ Observación registrada correctamente.</p>
+                <div class="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-slate-700 leading-relaxed text-sm">
+                    {{ tarea.descripcion }}
+                </div>
             </div>
-            
-            <!-- Botones de acción -->
-            <div class="pt-4 flex justify-end gap-3">
-                <button type="button" onclick="guardarObservacion('incidencia')" class="px-5 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors">
-                    Reportar Incidencia
-                </button>
-                <button type="button" onclick="guardarObservacion('finalizar')" class="px-5 py-2 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 shadow-sm transition-colors">
-                    Guardar y Finalizar
-                </button>
+
+            <!-- 3. Personal Asignado -->
+            <div>
+                <div class="flex items-center justify-between mb-2.5">
+                    <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                        Personal Asignado ({{ tarea.equipo_detalle|length }})
+                    </h3>
+                </div>
+
+                {% if tarea.equipo_detalle %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {% for trabajador in tarea.equipo_detalle %}
+                    <div class="flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-200">
+                        <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-extrabold text-xs flex items-center justify-center flex-shrink-0">
+                            {{ trabajador.nombre|make_list|first|upper }}
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-slate-800 truncate">{{ trabajador.nombre }}</p>
+                            <p class="text-xs text-slate-400">RUT: {{ trabajador.rut }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-500">
+                    Aún no hay trabajadores asignados específicamente a esta labor.
+                </div>
+                {% endif %}
             </div>
+
+            <!-- 4. Acciones según estado de la tarea -->
+            {% if tarea.estado != 'Completada' %}
+            <form method="POST" class="pt-4 border-t border-slate-100 flex flex-wrap justify-end gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="fecha" value="{{ tarea.fecha_iso }}">
+
+                {% if tarea.es_puntual and tarea.estado == 'Pendiente' %}
+                <button type="submit" name="accion" value="en_proceso"
+                    class="px-4 py-2.5 rounded-xl text-sm font-bold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer">
+                    Marcar En Proceso
+                </button>
+                {% endif %}
+
+                <button type="submit" name="accion" value="finalizar"
+                    class="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-sm transition-colors cursor-pointer">
+                    Confirmar y Finalizar
+                </button>
+            </form>
+            {% else %}
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                <span class="text-xs font-semibold text-emerald-700 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    Labor finalizada y registrada en el historial
+                </span>
+                <a href="{% url 'usuarios:tareas' %}?fecha={{ tarea.fecha_iso }}"
+                    class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
+                    Volver a Tareas
+                </a>
+            </div>
+            {% endif %}
+
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    function guardarObservacion(tipo) {
-        const msg = document.getElementById('mensaje-nota');
-        const pill = document.getElementById('estado-pill');
-        msg.classList.remove('hidden');
-
-        if (tipo === 'incidencia') {
-            msg.textContent = '⚠️ Incidencia registrada en la bitácora del turno.';
-            msg.className = 'text-xs font-semibold text-amber-600 mt-2';
-        } else {
-            msg.textContent = '✓ Observación guardada y tarea marcada como completada.';
-            msg.className = 'text-xs font-semibold text-emerald-600 mt-2';
-            pill.textContent = 'Completada';
-            pill.className = 'text-sm font-bold px-3 py-1.5 rounded-lg border bg-emerald-50 text-emerald-700 border-emerald-200';
-        }
-    }
-</script>
 {% endblock %}

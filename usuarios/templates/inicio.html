@@ -3,149 +3,213 @@
 {% block title %}Dashboard - FundoTasks{% endblock %}
 
 {% block content %}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-    
-    <!-- COLUMNA IZQUIERDA: ESTANQUE DE AGUA -->
-    <div class="lg:col-span-1 flex flex-col gap-4">
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-slate-800">Agua del Estanque</h2>
-            </div>
+<div class="space-y-6">
 
-            <!-- Estado del Estanque -->
-            <div class="flex items-center gap-3 mb-6">
-                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-500 text-xl">💧</div>
-                <div>
-                    <h3 class="font-bold text-slate-800">Estanque Principal</h3>
-                    <p class="text-xs text-emerald-600 font-semibold">Nivel Óptimo (Buena agua)</p>
+    <!-- ENCABEZADO SUPERIOR -->
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900">Resumen General</h1>
+        <p class="text-sm text-emerald-600 font-medium">{{ fecha_hoy_texto }} · Fundo San Carlos</p>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- BLOQUE SUPERIOR Y MEDIO (3 KPIs + ESTADO OPERATIVO | ALERTAS)     -->
+    <!-- ================================================================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
+        
+        <!-- COLUMNA IZQUIERDA (3/4): 3 KPIs ARRIBA + ESTADO OPERATIVO ABAJO -->
+        <div class="lg:col-span-3 flex flex-col gap-6">
+            
+            <!-- Fila de 3 KPIs -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                
+                <!-- KPI 1: Personal Activo -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+                        Personal Activo
+                    </span>
+                    <div class="text-3xl font-extrabold text-slate-900">{{ personal_activo }}</div>
+                    <p class="text-xs mt-2 font-medium text-emerald-600">
+                        De {{ personal_total }} registrados · {{ asistencias_hoy }} asistencias hoy
+                    </p>
+                </div>
+
+                <!-- KPI 2: Tareas para Hoy -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+                        Tareas para Hoy
+                    </span>
+                    <div class="text-3xl font-extrabold text-slate-900">{{ total_tareas_hoy }}</div>
+                    <p class="text-xs mt-2 font-medium text-slate-500">
+                        <span class="text-emerald-600 font-bold">{{ tareas_completadas_hoy }} completadas</span> · {{ tareas_en_progreso_hoy }} en proceso
+                    </p>
+                </div>
+
+                <!-- KPI 3: Alertas Cisterna -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider mb-2">
+                        Alertas Cisterna
+                    </span>
+                    <div class="text-3xl font-extrabold {% if total_alertas > 0 %} text-rose-600 {% else %} text-slate-900 {% endif %}">
+                        {{ total_alertas }}
+                    </div>
+                    <p class="text-xs mt-2 font-medium {% if total_alertas > 0 %} text-rose-600 {% else %} text-emerald-600 {% endif %}">
+                        {% if total_alertas > 0 %}Revisar historial de alertas{% else %}Operación hídrica normal{% endif %}
+                    </p>
                 </div>
             </div>
 
-            <!-- Gráfico del Estanque -->
-            <div class="relative w-full h-64 bg-slate-50 border-4 border-slate-200 rounded-3xl overflow-hidden shadow-inner flex flex-col justify-end">
-                <div class="relative w-full bg-blue-400 transition-all duration-1000 ease-in-out flex flex-col items-center justify-start pt-6" style="height: 77%;">
-                    <div class="absolute -top-3 w-full h-6 bg-blue-400 rounded-[50%] blur-[2px] opacity-80"></div>
-                    <span class="text-4xl font-extrabold text-white drop-shadow-md relative z-10">77%</span>
-                    <span class="text-sm font-bold text-blue-100 relative z-10 mt-1">38.500 Litros</span>
-                    <span class="text-xs text-blue-200 relative z-10">Capacidad: 50.000 L</span>
+            <!-- Estado Operativo de la Jornada -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col justify-center">
+                <div class="flex items-center justify-between mb-5">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Estado Operativo de la Jornada</h2>
+                        <p class="text-xs text-slate-500">Indicadores en tiempo real del fundo</p>
+                    </div>
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        En Línea
+                    </span>
+                </div>
+
+                <div class="space-y-5">
+                    <div>
+                        <div class="flex justify-between text-sm font-semibold mb-1.5">
+                            <span class="text-slate-700">Cumplimiento de Tareas Diarias</span>
+                            <span class="text-emerald-600">{{ porcentaje_tareas_hoy }}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-700" style="width: {{ porcentaje_tareas_hoy }}%;"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-sm font-semibold mb-1.5">
+                            <span class="text-slate-700">Disponibilidad de Personal Activo</span>
+                            <span class="text-indigo-600">{{ porcentaje_personal }}%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-indigo-500 h-2.5 rounded-full transition-all duration-700" style="width: {{ porcentaje_personal }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- COLUMNA DERECHA (1/4): ALERTAS RECIENTES -->
+        <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-slate-800">Alertas Recientes</h2>
+                    <a href="{% url 'cisterna:panel' %}" class="text-xs font-semibold text-emerald-600 hover:underline">Ver cisterna &gt;</a>
+                </div>
+
+                <div class="space-y-3">
+                    {% for alerta in alertas_recientes %}
+                    <div class="p-3 rounded-xl bg-rose-50/70 border border-rose-100">
+                        <p class="text-xs font-bold text-rose-700">{{ alerta.descripcion }}</p>
+                        <p class="text-[11px] text-slate-500 mt-1">{{ alerta.fechaHora|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    {% empty %}
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center space-y-1.5">
+                        <p class="text-sm font-semibold text-slate-700">Sin alertas registradas</p>
+                        <p class="text-xs text-slate-500 leading-relaxed">El nivel del estanque y los sensores operan dentro de los parámetros normales.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span>Sector: {{ cisterna.ubicacion|default:"Fundo San Carlos" }}</span>
+                <span class="font-semibold text-emerald-600">● Activo</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- BLOQUE INFERIOR: AGUA DEL ESTANQUE + TAREAS PARA HOY              -->
+    <!-- ================================================================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- COLUMNA IZQUIERDA (4/12): ESTANQUE DE AGUA -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-full">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-slate-800">Agua del Estanque</h2>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="font-bold text-slate-800">{{ cisterna.nombre|default:"Estanque Principal" }}</h3>
+                    <p class="text-xs {% if porcentaje_agua >= nivel_minimo %} text-emerald-600 {% else %} text-rose-600 {% endif %} font-semibold">
+                        {% if porcentaje_agua >= nivel_minimo %}Nivel Óptimo (Buena agua){% else %}Nivel Bajo (Revisar bomba){% endif %}
+                    </p>
+                </div>
+
+                <div class="relative w-full h-64 bg-slate-50 border-4 border-slate-200 rounded-3xl overflow-hidden shadow-inner flex flex-col justify-end">
+                    <div class="relative w-full bg-blue-400 transition-all duration-1000 ease-in-out flex flex-col items-center justify-start pt-6" style="height: {{ porcentaje_agua }}%;">
+                        <div class="absolute -top-3 w-full h-6 bg-blue-400 rounded-[50%] blur-[2px] opacity-80"></div>
+                        <span class="text-4xl font-extrabold text-white drop-shadow-md relative z-10">{{ porcentaje_agua }}%</span>
+                        <span class="text-sm font-bold text-blue-100 relative z-10 mt-1">{{ litros_agua }} Litros</span>
+                        <span class="text-xs text-blue-200 relative z-10">Capacidad: {{ capacidad_agua }} L</span>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- COLUMNA DERECHA: RESUMEN DE TAREAS PARA HOY -->
-    <div class="lg:col-span-2 flex flex-col gap-4">
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-full">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-lg font-bold text-slate-800">Tareas para Hoy</h2>
-                <a href="{% url 'usuarios:tareas' %}" class="text-sm font-medium text-emerald-600 hover:text-emerald-500">Ver todas &gt;</a>
-            </div>
+        <!-- COLUMNA DERECHA (8/12): RESUMEN DE TAREAS PARA HOY -->
+        <div class="lg:col-span-8 flex flex-col gap-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-full">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold text-slate-800">Tareas para Hoy</h2>
+                    {% if user.cargo == 'Administrador' or user.cargo == 'Secretario' %}
+                    <a href="{% url 'usuarios:tareas' %}" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition-colors">
+                        + Gestionar Tareas
+                    </a>
+                    {% else %}
+                    <a href="{% url 'usuarios:tareas' %}" class="text-sm font-medium text-emerald-600 hover:text-emerald-500">
+                        Ver todas &gt;
+                    </a>
+                    {% endif %}
+                </div>
 
-            <!-- Lista de Tareas (Diarias + Puntuales de Hoy según Rol) -->
-            <div class="space-y-4" id="lista-tareas-hoy">
-                <!-- Tarea 1: Ordeña Mañana -->
-                <a href="{% url 'usuarios:detalle_tarea' 1 %}" class="block group task-card-hoy" data-start="05:00" data-end="07:00">
-                    <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 group-hover:bg-white group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
-                        <div class="flex items-start gap-4">
-                            <div class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded mt-1">ALTA</div>
-                            <div>
-                                <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
-                                <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Ordeña (Turno Mañana)</h4>
-                                <p class="text-sm text-slate-500">05:00 - 07:00 · Sector: Sala de Ordeña</p>
+                <div class="space-y-4">
+                    {% for t in todas_tareas_hoy %}
+                    <a href="{{ t.detalle_url }}" class="block group">
+                        <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 group-hover:bg-white group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
+                            <div class="flex items-start gap-4">
+                                <div class="text-xs font-bold px-2 py-1 rounded mt-1
+                                    {% if t.color == 'rose' %} bg-rose-100 text-rose-700
+                                    {% elif t.color == 'amber' %} bg-amber-100 text-amber-700
+                                    {% elif t.color == 'emerald' %} bg-emerald-100 text-emerald-700
+                                    {% else %} bg-indigo-100 text-indigo-700 {% endif %}">
+                                    {{ t.etiqueta }}
+                                </div>
+                                <div>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 uppercase tracking-wider
+                                        {% if t.estado == 'Completada' %} bg-emerald-50 text-emerald-600 border-emerald-200
+                                        {% elif 'En Proceso' in t.estado %} bg-blue-50 text-blue-600 border-blue-200
+                                        {% else %} bg-slate-100 text-slate-600 border-slate-200 {% endif %}">
+                                        {{ t.estado }}
+                                    </span>
+                                    <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors {% if t.estado == 'Completada' %} line-through text-slate-500 {% endif %}">
+                                        {{ t.titulo }}
+                                    </h4>
+                                    <p class="text-sm text-slate-500">
+                                        {% if t.es_puntual %}
+                                            Encargado(s): {{ t.encargados }} · {{ t.subtitulo }}
+                                        {% else %}
+                                            {{ t.horaInicio }} - {{ t.horaFin }} · {{ t.subtitulo }}
+                                        {% endif %}
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </a>
-
-                <!-- Tarea 2: Limpieza -->
-                <a href="{% url 'usuarios:detalle_tarea' 2 %}" class="block group task-card-hoy" data-start="09:00" data-end="12:00">
-                    <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 group-hover:bg-white group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
-                        <div class="flex items-start gap-4">
-                            <div class="bg-amber-100 text-amber-700 text-xs font-bold px-2 py-1 rounded mt-1">MEDIA</div>
-                            <div>
-                                <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
-                                <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Limpieza Patios y Corrales</h4>
-                                <p class="text-sm text-slate-500">09:00 - 12:00 · Sector: Corrales 1 al 4</p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
-                <!-- Tarea 3: Ordeña Tarde -->
-                <a href="{% url 'usuarios:detalle_tarea' 3 %}" class="block group task-card-hoy" data-start="14:00" data-end="16:00">
-                    <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 group-hover:bg-white group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
-                        <div class="flex items-start gap-4">
-                            <div class="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded mt-1">ALTA</div>
-                            <div>
-                                <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
-                                <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Ordeña (Turno Tarde)</h4>
-                                <p class="text-sm text-slate-500">14:00 - 16:00 · Sector: Sala de Ordeña</p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-
-                <!-- Tareas Puntuales de Hoy desde Oracle DB -->
-                {% for t in tareas_puntuales_hoy %}
-                <a href="{% url 'usuarios:detalle_tarea_puntual' t.idTarea %}" class="block group task-card-hoy" data-start="{{ t.horaInicio }}" data-end="{{ t.horaFin }}">
-                    <div class="flex items-center justify-between p-4 border border-slate-100 rounded-xl bg-slate-50 group-hover:bg-white group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
-                        <div class="flex items-start gap-4">
-                            <div class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-1 rounded mt-1">PUNTUAL</div>
-                            <div>
-                                <span class="badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 transition-colors uppercase tracking-wider">Cargando...</span>
-                                <h4 class="font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">{{ t.nombreTarea }}</h4>
-                                <p class="text-sm text-slate-500">{{ t.horaInicio }} - {{ t.horaFin }} · Encargado(s): {{ t.lista_encargados }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
+                    </a>
+                    {% endfor %}
+                </div>
             </div>
         </div>
-    </div>
 
+    </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const now = new Date();
-        const currentHour = now.getHours().toString().padStart(2, '0');
-        const currentMin = now.getMinutes().toString().padStart(2, '0');
-        const currentTimeStr = `${currentHour}:${currentMin}`;
-
-        // Ordenar cronológicamente las tareas del Dashboard
-        const container = document.getElementById('lista-tareas-hoy');
-        const cardsArray = Array.from(container.children);
-        cardsArray.sort((a, b) => a.getAttribute('data-start').localeCompare(b.getAttribute('data-start')));
-        container.innerHTML = '';
-        cardsArray.forEach(card => container.appendChild(card));
-
-        document.querySelectorAll('.task-card-hoy').forEach(card => {
-            const badge = card.querySelector('.badge-estado');
-            const start = card.getAttribute('data-start');
-            const end = card.getAttribute('data-end');
-            
-            let status = "";
-            if (currentTimeStr > end) {
-                status = "Completada";
-            } else if (currentTimeStr >= start && currentTimeStr <= end) {
-                status = "En Progreso";
-            } else {
-                status = "Pendiente";
-            }
-
-            if (status === "Completada") {
-                badge.className = "badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 uppercase tracking-wider bg-emerald-50 text-emerald-600 border-emerald-200";
-            } else if (status === "En Progreso") {
-                badge.className = "badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 uppercase tracking-wider bg-blue-50 text-blue-600 border-blue-200 animate-pulse";
-            } else {
-                badge.className = "badge-estado text-[10px] font-bold px-2 py-0.5 rounded border inline-block mb-1 uppercase tracking-wider bg-slate-100 text-slate-500 border-slate-200";
-            }
-            
-            badge.textContent = status;
-        });
-    });
-</script>
 {% endblock %}

@@ -2,158 +2,557 @@
 {% block title %}Mis Tareas - FundoTasks{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto relative">
-    <!-- Encabezado del mes y controles de semana -->
-    <div class="flex items-center justify-between mb-4">
-        <h1 id="mes-titulo" class="text-2xl font-bold text-emerald-700">Cargando...</h1>
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- ENCABEZADO SUPERIOR + BOTÓN CREAR TAREA -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 id="mes-titulo" class="text-2xl font-extrabold text-emerald-700">Cargando...</h1>
+            <p id="fecha-seleccionada" class="text-xs font-bold text-slate-500 uppercase tracking-wider mt-0.5">
+                {{ subtitulo_fecha }}
+            </p>
+        </div>
+
         <div class="flex items-center gap-3">
-            <button id="btn-prev" class="text-slate-400 hover:text-emerald-600 font-bold px-2">&lt;</button>
-            <span id="btn-hoy" class="text-emerald-600 font-semibold cursor-pointer">Hoy</span>
-            <button id="btn-next" class="text-slate-400 hover:text-emerald-600 font-bold px-2">&gt;</button>
+            <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2 py-1.5 shadow-xs">
+                <button type="button" id="btn-prev" class="text-slate-400 hover:text-emerald-600 font-bold px-2.5 py-1">&lt;</button>
+                <a href="{% url 'usuarios:tareas' %}" class="text-emerald-600 hover:text-emerald-700 text-sm font-bold px-2">Hoy</a>
+                <button type="button" id="btn-next" class="text-slate-400 hover:text-emerald-600 font-bold px-2.5 py-1">&gt;</button>
+            </div>
+
+            {% if user.cargo == 'Administrador' or user.cargo == 'Secretario' %}
+            <button type="button" onclick="abrirPanelCrear()"
+                class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-extrabold py-3 px-6 rounded-xl shadow-lg shadow-emerald-600/25 transition-all flex items-center gap-2 cursor-pointer">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Crear Nueva Tarea
+            </button>
+            {% endif %}
         </div>
     </div>
-    
-    <!-- Calendario Horizontal -->
-    <div id="calendario-contenedor" class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200 mb-6 overflow-x-auto gap-2">
+
+    <!-- CALENDARIO HORIZONTAL DE LA SEMANA -->
+    <div id="calendario-contenedor" class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200 overflow-x-auto gap-2">
         <!-- Generado por JS -->
     </div>
 
-    <!-- Título de fecha y Botón de Admin -->
-    <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-2">
-        <h2 id="fecha-seleccionada" class="text-sm font-semibold text-slate-500 uppercase tracking-wider"></h2>
-        
-        {% if user.cargo == 'Administrador' %}
-        <button onclick="abrirModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-1.5 px-3 rounded-lg shadow-sm transition-colors flex items-center gap-1">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            Crear Tarea
-        </button>
-        {% endif %}
+    <!-- ================================================================= -->
+    <!-- CONTENEDOR EN DOS SECCIONES (IZQUIERDA: EN PROCESO | DERECHA: POR HACER Y HECHAS) -->
+    <!-- ================================================================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- ============================================================= -->
+        <!-- COLUMNA IZQUIERDA (5/12): TAREAS EN PROCESO                   -->
+        <!-- ============================================================= -->
+        <section class="lg:col-span-5 space-y-3 lg:sticky lg:top-6">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                <h2 class="text-sm font-extrabold text-blue-700 uppercase tracking-wider flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
+                    Tareas En Proceso ({{ en_proceso|length }})
+                </h2>
+            </div>
+
+            <div class="space-y-3">
+                {% for t in en_proceso %}
+                <div class="bg-white rounded-2xl p-5 shadow-sm border border-blue-200 hover:border-blue-400 transition-all space-y-4">
+                    
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] font-extrabold px-2.5 py-0.5 rounded uppercase tracking-wider
+                                {% if t.color == 'rose' %} bg-rose-100 text-rose-700
+                                {% elif t.color == 'amber' %} bg-amber-100 text-amber-700
+                                {% else %} bg-emerald-100 text-emerald-700 {% endif %}">
+                                {{ t.etiqueta }}
+                            </span>
+                            <span class="text-xs font-bold px-2.5 py-0.5 rounded border bg-blue-50 text-blue-700 border-blue-200">
+                                {{ t.estado }}
+                            </span>
+                        </div>
+
+                        {% if t.es_puntual %}
+                            {% if user.cargo == 'Administrador' or user.cargo == 'Secretario' %}
+                            <button type="button"
+                                onclick="abrirPanelEditar(this)"
+                                data-editar-url="{{ t.editar_url }}"
+                                data-eliminar-url="{{ t.eliminar_url }}"
+                                data-nombre="{{ t.titulo }}"
+                                data-prioridad="{{ t.prioridad }}"
+                                data-sector="{{ t.sector }}"
+                                data-desc="{{ t.descripcion_raw }}"
+                                data-asignados="{{ t.ids_asignados }}"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                Editar
+                            </button>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+
+                    <div onclick="window.location.href='{{ t.detalle_url }}'" class="cursor-pointer group">
+                        <h3 class="text-base font-bold text-slate-800 group-hover:text-blue-700 transition-colors">
+                            {{ t.titulo }}
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">Encargado(s): {{ t.encargados }}</p>
+                        <p class="text-xs text-slate-500 mt-0.5">{{ t.subtitulo }}</p>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 flex justify-end">
+                        <form method="POST" action="{{ t.estado_url }}">
+                            {% csrf_token %}
+                            <input type="hidden" name="fecha_retorno" value="{{ fecha_sel_iso }}">
+                            <input type="hidden" name="nuevo_estado" value="Completada">
+                            <button type="submit"
+                                class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-xs transition-colors cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                Finalizar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 text-center text-sm text-slate-500">
+                    No hay tareas en proceso actualmente.
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- ============================================================= -->
+        <!-- COLUMNA DERECHA (7/12): TAREAS POR HACER Y TAREAS HECHAS      -->
+        <!-- ============================================================= -->
+        <div class="lg:col-span-7 space-y-6">
+
+            <!-- SUBSECCIÓN A: TAREAS PENDIENTES -->
+            <section class="space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <h2 class="text-sm font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                        Tareas Pendientes ({{ pendientes|length }})
+                    </h2>
+                </div>
+
+                <div class="space-y-3">
+                    {% for t in pendientes %}
+                    <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:border-emerald-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        
+                        <div onclick="window.location.href='{{ t.detalle_url }}'" class="flex items-start gap-4 flex-1 cursor-pointer group">
+                            <div class="w-22 rounded-xl p-3 flex flex-col justify-center items-center flex-shrink-0 text-center
+                                {% if t.color == 'rose' %} bg-rose-50 text-rose-700
+                                {% elif t.color == 'amber' %} bg-amber-50 text-amber-700
+                                {% elif t.color == 'emerald' %} bg-emerald-50 text-emerald-700
+                                {% else %} bg-indigo-50 text-indigo-700 {% endif %}">
+                                {% if t.es_puntual %}
+                                    <span class="font-extrabold text-xs tracking-wider">{{ t.etiqueta }}</span>
+                                    <span class="text-[10px] font-bold opacity-75 mt-1.5">PUNTUAL</span>
+                                {% else %}
+                                    <span class="font-bold text-sm">{{ t.horaInicio }}</span>
+                                    <span class="text-xs opacity-70">{{ t.horaFin }}</span>
+                                    <span class="text-[10px] font-extrabold mt-2 tracking-wider">{{ t.etiqueta }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex-1">
+                                <span class="text-xs font-bold px-2.5 py-0.5 rounded border inline-block mb-1.5 bg-amber-50 text-amber-700 border-amber-200">
+                                    {{ t.estado }}
+                                </span>
+                                <h3 class="text-base font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">
+                                    {{ t.titulo }}
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Encargado(s): {{ t.encargados }}</p>
+                                <p class="text-xs text-slate-500">{{ t.subtitulo }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap sm:flex-col items-center sm:items-end justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            {% if t.es_puntual %}
+                                {% if user.cargo == 'Administrador' or user.cargo == 'Secretario' %}
+                                <button type="button"
+                                    onclick="abrirPanelEditar(this)"
+                                    data-editar-url="{{ t.editar_url }}"
+                                    data-eliminar-url="{{ t.eliminar_url }}"
+                                    data-nombre="{{ t.titulo }}"
+                                    data-prioridad="{{ t.prioridad }}"
+                                    data-sector="{{ t.sector }}"
+                                    data-desc="{{ t.descripcion_raw }}"
+                                    data-asignados="{{ t.ids_asignados }}"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                    Editar
+                                </button>
+                                {% endif %}
+                            {% endif %}
+
+                            <div class="flex items-center gap-2">
+                                {% if t.es_puntual %}
+                                <form method="POST" action="{{ t.estado_url }}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="fecha_retorno" value="{{ fecha_sel_iso }}">
+                                    <input type="hidden" name="nuevo_estado" value="En Proceso">
+                                    <button type="submit"
+                                        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors cursor-pointer">
+                                        En Proceso
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                <form method="POST" action="{{ t.estado_url }}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="fecha_retorno" value="{{ fecha_sel_iso }}">
+                                    <input type="hidden" name="nuevo_estado" value="Completada">
+                                    <button type="submit"
+                                        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-xs transition-colors cursor-pointer">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        Finalizar
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 text-center text-sm text-slate-500">
+                        No hay tareas pendientes para este día.
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <!-- SUBSECCIÓN B: TAREAS COMPLETADAS -->
+            <section class="space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <h2 class="text-sm font-extrabold text-emerald-700 uppercase tracking-wider flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        Tareas Completadas ({{ completadas|length }})
+                    </h2>
+                </div>
+
+                <div class="space-y-3">
+                    {% for t in completadas %}
+                    <div class="bg-white/85 rounded-2xl p-5 shadow-xs border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        
+                        <div onclick="window.location.href='{{ t.detalle_url }}'" class="flex items-start gap-4 flex-1 cursor-pointer group">
+                            <div class="w-22 rounded-xl p-3 flex flex-col justify-center items-center flex-shrink-0 text-center bg-emerald-50 text-emerald-700">
+                                {% if t.es_puntual %}
+                                    <span class="font-extrabold text-xs tracking-wider">{{ t.etiqueta }}</span>
+                                    <span class="text-[10px] font-bold opacity-75 mt-1.5">PUNTUAL</span>
+                                {% else %}
+                                    <span class="font-bold text-sm">{{ t.horaInicio }}</span>
+                                    <span class="text-xs opacity-70">{{ t.horaFin }}</span>
+                                    <span class="text-[10px] font-extrabold mt-2 tracking-wider">{{ t.etiqueta }}</span>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex-1">
+                                <span class="text-xs font-bold px-2.5 py-0.5 rounded border inline-block mb-1.5 bg-emerald-50 text-emerald-700 border-emerald-200">
+                                    Completada
+                                </span>
+                                <h3 class="text-base font-bold text-slate-600 line-through group-hover:text-emerald-700 transition-colors">
+                                    {{ t.titulo }}
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Encargado(s): {{ t.encargados }}</p>
+                                <p class="text-xs text-slate-400">{{ t.subtitulo }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap sm:flex-col items-center sm:items-end justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            {% if t.es_puntual %}
+                                {% if user.cargo == 'Administrador' or user.cargo == 'Secretario' %}
+                                <button type="button"
+                                    onclick="abrirPanelEditar(this)"
+                                    data-editar-url="{{ t.editar_url }}"
+                                    data-eliminar-url="{{ t.eliminar_url }}"
+                                    data-nombre="{{ t.titulo }}"
+                                    data-prioridad="{{ t.prioridad }}"
+                                    data-sector="{{ t.sector }}"
+                                    data-desc="{{ t.descripcion_raw }}"
+                                    data-asignados="{{ t.ids_asignados }}"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+                                    Editar
+                                </button>
+                                {% endif %}
+                            {% else %}
+                            <form method="POST" action="{{ t.estado_url }}">
+                                {% csrf_token %}
+                                <input type="hidden" name="fecha_retorno" value="{{ fecha_sel_iso }}">
+                                <input type="hidden" name="nuevo_estado" value="Pendiente">
+                                <button type="submit"
+                                    class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-500 hover:text-amber-700 bg-slate-50 hover:bg-amber-50 border border-slate-200 transition-colors cursor-pointer">
+                                    Deshacer
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 text-center text-sm text-slate-500">
+                        Aún no hay tareas finalizadas en este día.
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+        </div>
     </div>
-    
-    <div class="space-y-4" id="lista-tareas">
-        <!-- Tarea 1: Ordeña Mañana (Diaria fija) -->
-        <a href="{% url 'usuarios:detalle_tarea' 1 %}" data-base-url="{% url 'usuarios:detalle_tarea' 1 %}" class="block group task-card daily-task" data-start="05:00" data-end="07:00">
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
-                <div class="bg-rose-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-rose-700 flex-shrink-0">
-                    <span class="font-bold text-sm">05:00</span>
-                    <span class="text-xs opacity-70">07:00</span>
-                    <span class="text-xs font-semibold mt-2">ALTA</span>
-                </div>
-                <div class="flex-1">
-                    <span class="task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 transition-colors">Cargando...</span>
-                    <h3 class="text-lg font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Ordeña (Turno Mañana)</h3>
-                    <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre }}</p>
-                    <p class="text-sm text-slate-500">Sector: Sala de Ordeña</p>
-                </div>
-            </div>
-        </a>
 
-        <!-- Tarea 2: Limpieza (Diaria fija) -->
-        <a href="{% url 'usuarios:detalle_tarea' 2 %}" data-base-url="{% url 'usuarios:detalle_tarea' 2 %}" class="block group task-card daily-task" data-start="09:00" data-end="12:00">
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
-                <div class="bg-amber-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-amber-700 flex-shrink-0">
-                    <span class="font-bold text-sm">09:00</span>
-                    <span class="text-xs opacity-70">12:00</span>
-                    <span class="text-xs font-semibold mt-2">MEDIA</span>
-                </div>
-                <div class="flex-1">
-                    <span class="task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 transition-colors">Cargando...</span>
-                    <h3 class="text-lg font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Limpieza Patios y Corrales</h3>
-                    <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre }}</p>
-                    <p class="text-sm text-slate-500">Sector: Corrales 1 al 4</p>
-                </div>
-            </div>
-        </a>
+</div>
 
-        <!-- Tarea 3: Ordeña Tarde (Diaria fija) -->
-        <a href="{% url 'usuarios:detalle_tarea' 3 %}" data-base-url="{% url 'usuarios:detalle_tarea' 3 %}" class="block group task-card daily-task" data-start="14:00" data-end="16:00">
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
-                <div class="bg-rose-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-rose-700 flex-shrink-0">
-                    <span class="font-bold text-sm">14:00</span>
-                    <span class="text-xs opacity-70">16:00</span>
-                    <span class="text-xs font-semibold mt-2">ALTA</span>
-                </div>
-                <div class="flex-1">
-                    <span class="task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 transition-colors">Cargando...</span>
-                    <h3 class="text-lg font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">Ordeña (Turno Tarde)</h3>
-                    <p class="text-sm text-slate-500 mt-1">Encargado: {{ user.nombre }}</p>
-                    <p class="text-sm text-slate-500">Sector: Sala de Ordeña</p>
-                </div>
-            </div>
-        </a>
+<!-- ================================================================= -->
+<!-- PANEL LATERAL 1: CREAR TAREA PUNTUAL                              -->
+<!-- ================================================================= -->
+{% if user.cargo == 'Administrador' or user.cargo == 'Secretario' %}
+<div id="drawer-crear" class="fixed inset-0 z-50 hidden">
+    <div onclick="cerrarPanelCrear()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity"></div>
 
-        <!-- Tareas Puntuales desde Oracle DB (Filtradas por Rol y Fecha) -->
-        {% for t in tareas_puntuales %}
-        <a href="{% url 'usuarios:detalle_tarea_puntual' t.idTarea %}" class="block group task-card puntual-task" data-fecha="{{ t.fechaProgramada|date:'Y-m-d' }}" data-start="{{ t.horaInicio }}" data-end="{{ t.horaFin }}">
-            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex gap-4 group-hover:shadow-md group-hover:border-emerald-300 transition-all cursor-pointer">
-                <div class="bg-indigo-50 w-24 rounded-xl p-3 flex flex-col justify-center items-center text-indigo-700 flex-shrink-0">
-                    <span class="font-bold text-sm">{{ t.horaInicio }}</span>
-                    <span class="text-xs opacity-70">{{ t.horaFin }}</span>
-                    <span class="text-xs font-semibold mt-2">PUNTUAL</span>
+    <div class="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl border-l border-slate-200 flex flex-col justify-between z-10 overflow-y-auto">
+        <div>
+            <div class="bg-emerald-700 px-6 py-5 flex items-center justify-between">
+                <div>
+                    <h3 class="text-white font-extrabold text-lg">Nueva Tarea Puntual</h3>
+                    <p class="text-emerald-100 text-xs mt-0.5">Se asignará a partir del {{ subtitulo_fecha|lower }}</p>
                 </div>
-                <div class="flex-1">
-                    <span class="task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 transition-colors">Cargando...</span>
-                    <h3 class="text-lg font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">{{ t.nombreTarea }}</h3>
-                    <p class="text-sm text-slate-500 mt-1">Encargado(s): {{ t.lista_encargados }}</p>
-                    <p class="text-sm text-slate-500">{{ t.descripcion }}</p>
-                </div>
+                <button type="button" onclick="cerrarPanelCrear()" class="w-8 h-8 rounded-full bg-emerald-800/60 text-emerald-100 hover:text-white flex items-center justify-center text-xl leading-none cursor-pointer">
+                    &times;
+                </button>
             </div>
-        </a>
-        {% endfor %}
+
+            <form id="form-crear-tarea" method="POST" action="{% url 'usuarios:tareas' %}" class="p-6 space-y-5">
+                {% csrf_token %}
+                <input type="hidden" name="fecha_programada" value="{{ fecha_sel_iso }}">
+
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                        Nombre de la Tarea
+                    </label>
+                    <input type="text" name="nombre_tarea" required
+                        class="w-full rounded-xl border-slate-300 text-sm p-3 border bg-slate-50 focus:bg-white focus:border-emerald-500 focus:ring-emerald-500"
+                        placeholder="Ej: Reparación cerco potrero norte">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                            Prioridad
+                        </label>
+                        <div class="grid grid-cols-3 gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200">
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="prioridad" value="BAJA" class="sr-only peer">
+                                <span class="block py-1.5 text-xs font-bold rounded-lg text-slate-500 peer-checked:bg-emerald-600 peer-checked:text-white transition-colors">
+                                    Baja
+                                </span>
+                            </label>
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="prioridad" value="MEDIA" checked class="sr-only peer">
+                                <span class="block py-1.5 text-xs font-bold rounded-lg text-slate-500 peer-checked:bg-amber-500 peer-checked:text-white transition-colors">
+                                    Media
+                                </span>
+                            </label>
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="prioridad" value="ALTA" class="sr-only peer">
+                                <span class="block py-1.5 text-xs font-bold rounded-lg text-slate-500 peer-checked:bg-rose-600 peer-checked:text-white transition-colors">
+                                    Alta
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                            Sector del Fundo
+                        </label>
+                        <select name="sector" class="w-full rounded-xl border-slate-300 text-sm p-2.5 border bg-slate-50 font-medium text-slate-700">
+                            <option value="General">General</option>
+                            <option value="Sala de Ordeña">Sala de Ordeña</option>
+                            <option value="Corrales 1 al 4">Corrales 1 al 4</option>
+                            <option value="Potrero Norte">Potrero Norte</option>
+                            <option value="Potrero Sur">Potrero Sur</option>
+                            <option value="Estanque / Cisterna">Estanque / Cisterna</option>
+                            <option value="Bodega de Insumos">Bodega de Insumos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider">
+                            Asignar a (Personal)
+                        </label>
+                        <span class="text-[11px] text-slate-400">Selecciona uno o más</span>
+                    </div>
+                    <div class="max-h-44 overflow-y-auto bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1.5">
+                        {% for p in personal %}
+                        <label class="flex items-center justify-between cursor-pointer p-2.5 bg-white hover:bg-emerald-50/60 border border-slate-100 rounded-xl transition-colors">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" name="asignados_checkbox" value="{{ p.idPersonal }}" class="w-4 h-4 text-emerald-600 rounded border-slate-300">
+                                <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 font-bold text-xs flex items-center justify-center">
+                                    {{ p.nombre|make_list|first|upper }}
+                                </div>
+                                <div>
+                                    <span class="text-sm text-slate-800 font-semibold block leading-tight">{{ p.nombre }}</span>
+                                    <span class="text-[11px] text-slate-400">{{ p.rut }}</span>
+                                </div>
+                            </div>
+                        </label>
+                        {% empty %}
+                        <p class="text-xs text-slate-500 text-center py-3">No hay personal activo.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                        Descripción e Instrucciones
+                    </label>
+                    <textarea name="descripcion" rows="4"
+                        class="w-full rounded-xl border-slate-300 text-sm p-3 border bg-slate-50 focus:bg-white focus:border-emerald-500 focus:ring-emerald-500"
+                        placeholder="Detalla qué se debe realizar, herramientas necesarias o observaciones para el equipo..."></textarea>
+                </div>
+
+                <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                    <button type="button" onclick="cerrarPanelCrear()" class="px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 text-sm font-extrabold text-white bg-emerald-600 rounded-xl hover:bg-emerald-500 shadow-md shadow-emerald-600/20 cursor-pointer">
+                        Guardar Tarea
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<!-- MODAL CREAR TAREA PUNTUAL -->
-{% if user.cargo == 'Administrador' %}
-<div id="modal-tarea" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex justify-center items-center opacity-0 transition-opacity duration-300">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden transform scale-95 transition-transform duration-300" id="modal-content">
-        <div class="bg-emerald-700 p-4 flex justify-between items-center">
-            <h3 class="text-white font-bold text-lg">Crear Tarea Puntual</h3>
-            <button type="button" onclick="cerrarModal()" class="text-emerald-200 hover:text-white font-bold text-xl">&times;</button>
-        </div>
-        <form method="POST" action="{% url 'usuarios:tareas' %}" id="form-nueva-tarea" class="p-5 space-y-4">
-            {% csrf_token %}
-            <input type="hidden" name="fecha_programada" id="t-fecha">
+<!-- ================================================================= -->
+<!-- PANEL LATERAL 2: EDITAR Y ELIMINAR TAREA PUNTUAL                  -->
+<!-- ================================================================= -->
+<div id="drawer-editar" class="fixed inset-0 z-50 hidden">
+    <div onclick="cerrarPanelEditar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] transition-opacity"></div>
 
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Nombre de la Tarea</label>
-                <input type="text" name="nombre_tarea" id="t-nombre" required class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50" placeholder="Ej: Revisión de cercos sector sur">
-            </div>
-            <div class="grid grid-cols-2 gap-4">
+    <div class="fixed inset-y-0 right-0 w-full max-w-md bg-white shadow-2xl border-l border-slate-200 flex flex-col justify-between z-10 overflow-y-auto">
+        <div>
+            <div class="bg-indigo-700 px-6 py-5 flex items-center justify-between">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Hora Inicio</label>
-                    <input type="time" name="hora_inicio" id="t-inicio" required class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50">
+                    <h3 class="text-white font-extrabold text-lg">Editar Tarea Puntual</h3>
+                    <p class="text-indigo-200 text-xs mt-0.5">Actualiza los datos, el equipo o elimina la tarea</p>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-1">Hora Fin</label>
-                    <input type="time" name="hora_fin" id="t-fin" required class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50">
-                </div>
+                <button type="button" onclick="cerrarPanelEditar()" class="w-8 h-8 rounded-full bg-indigo-800/60 text-indigo-100 hover:text-white flex items-center justify-center text-xl leading-none cursor-pointer">
+                    &times;
+                </button>
             </div>
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Asignar a (Personal)</label>
-                <div class="max-h-32 overflow-y-auto bg-slate-50 border border-slate-300 rounded-lg p-2 space-y-1">
-                    {% for p in personal %}
-                    <label class="flex items-center gap-3 cursor-pointer p-2 hover:bg-slate-200/50 rounded-md transition-colors">
-                        <input type="checkbox" name="asignados_checkbox" value="{{ p.idPersonal }}" class="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500">
-                        <span class="text-sm text-slate-700 font-medium">
-                            {{ p.nombre }}
-                            <span class="text-[11px] text-slate-500 font-normal ml-1">({{ p.rut }})</span>
-                        </span>
+
+            <form method="POST" id="form-editar-tarea" action="" class="p-6 space-y-5">
+                {% csrf_token %}
+                <input type="hidden" name="fecha_retorno" value="{{ fecha_sel_iso }}">
+
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                        Nombre de la Tarea
                     </label>
-                    {% empty %}
-                    <div class="p-2 text-sm text-slate-500 text-center">No hay personal activo disponible.</div>
-                    {% endfor %}
+                    <input type="text" name="nombre_tarea" id="edit-nombre" required
+                        class="w-full rounded-xl border-slate-300 text-sm p-3 border bg-slate-50 focus:bg-white">
                 </div>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
-                <textarea name="descripcion" id="t-desc" rows="2" class="w-full rounded-lg border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 text-sm p-2.5 border bg-slate-50" placeholder="Detalles o instrucciones adicionales..."></textarea>
-            </div>
-            <div class="pt-2 flex justify-end gap-3 border-t border-slate-100">
-                <button type="button" onclick="cerrarModal()" class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">Cancelar</button>
-                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-500 shadow-sm">Agregar Tarea</button>
-            </div>
-        </form>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                            Prioridad
+                        </label>
+                        <div class="grid grid-cols-3 gap-1.5 bg-slate-50 p-1 rounded-xl border border-slate-200">
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="prioridad" value="BAJA" class="edit-prio-radio sr-only peer">
+                                <span class="block py-1.5 text-xs font-bold rounded-lg text-slate-500 peer-checked:bg-emerald-600 peer-checked:text-white transition-colors">
+                                    Baja
+                                </span>
+                            </label>
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="prioridad" value="MEDIA" class="edit-prio-radio sr-only peer">
+                                <span class="block py-1.5 text-xs font-bold rounded-lg text-slate-500 peer-checked:bg-amber-500 peer-checked:text-white transition-colors">
+                                    Media
+                                </span>
+                            </label>
+                            <label class="cursor-pointer text-center">
+                                <input type="radio" name="prioridad" value="ALTA" class="edit-prio-radio sr-only peer">
+                                <span class="block py-1.5 text-xs font-bold rounded-lg text-slate-500 peer-checked:bg-rose-600 peer-checked:text-white transition-colors">
+                                    Alta
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                            Sector del Fundo
+                        </label>
+                        <select name="sector" id="edit-sector" class="w-full rounded-xl border-slate-300 text-sm p-2.5 border bg-slate-50 font-medium text-slate-700">
+                            <option value="General">General</option>
+                            <option value="Sala de Ordeña">Sala de Ordeña</option>
+                            <option value="Corrales 1 al 4">Corrales 1 al 4</option>
+                            <option value="Potrero Norte">Potrero Norte</option>
+                            <option value="Potrero Sur">Potrero Sur</option>
+                            <option value="Estanque / Cisterna">Estanque / Cisterna</option>
+                            <option value="Bodega de Insumos">Bodega de Insumos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                        Asignar a (Personal)
+                    </label>
+                    <div class="max-h-44 overflow-y-auto bg-slate-50 border border-slate-200 rounded-xl p-2 space-y-1.5">
+                        {% for p in personal %}
+                        <label class="flex items-center justify-between cursor-pointer p-2.5 bg-white hover:bg-indigo-50/60 border border-slate-100 rounded-xl transition-colors">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" name="asignados_checkbox" value="{{ p.idPersonal }}" class="edit-checkbox w-4 h-4 text-indigo-600 rounded border-slate-300">
+                                <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">
+                                    {{ p.nombre|make_list|first|upper }}
+                                </div>
+                                <div>
+                                    <span class="text-sm text-slate-800 font-semibold block leading-tight">{{ p.nombre }}</span>
+                                    <span class="text-[11px] text-slate-400">{{ p.rut }}</span>
+                                </div>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-extrabold text-slate-600 uppercase tracking-wider mb-1.5">
+                        Descripción e Instrucciones
+                    </label>
+                    <textarea name="descripcion" id="edit-desc" rows="4"
+                        class="w-full rounded-xl border-slate-300 text-sm p-3 border bg-slate-50 focus:bg-white"></textarea>
+                </div>
+
+                <div class="pt-4 flex items-center justify-between gap-3 border-t border-slate-100">
+                    <button type="button" onclick="confirmarEliminarTarea()"
+                        class="px-4 py-2.5 text-xs font-extrabold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer">
+                        Eliminar Tarea
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="cerrarPanelEditar()" class="px-4 py-2.5 text-sm font-semibold text-slate-600 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 cursor-pointer">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-5 py-2.5 text-sm font-extrabold text-white bg-indigo-600 rounded-xl hover:bg-indigo-500 shadow-md shadow-indigo-600/20 cursor-pointer">
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <form method="POST" id="form-eliminar-tarea" action="" class="hidden">
+                {% csrf_token %}
+                <input type="hidden" name="fecha_retorno" value="{{ fecha_sel_iso }}">
+            </form>
+        </div>
     </div>
 </div>
 {% endif %}
@@ -161,170 +560,110 @@
 
 {% block extra_js %}
 <script>
-    const modal = document.getElementById('modal-tarea');
-    const modalContent = document.getElementById('modal-content');
-
-    function abrirModal() {
-        if (!modal) return;
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            modalContent.classList.remove('scale-95');
-        }, 10);
+    function abrirPanelCrear() {
+        document.getElementById('drawer-crear')?.classList.remove('hidden');
+    }
+    function cerrarPanelCrear() {
+        document.getElementById('drawer-crear')?.classList.add('hidden');
     }
 
-    function cerrarModal() {
-        if (!modal) return;
-        modal.classList.add('opacity-0');
-        modalContent.classList.add('scale-95');
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 300);
+    function abrirPanelEditar(btn) {
+        const drawer = document.getElementById('drawer-editar');
+        if (!drawer) return;
+
+        document.getElementById('form-editar-tarea').action = btn.getAttribute('data-editar-url');
+        document.getElementById('form-eliminar-tarea').action = btn.getAttribute('data-eliminar-url');
+        document.getElementById('edit-nombre').value = btn.getAttribute('data-nombre');
+        document.getElementById('edit-desc').value = btn.getAttribute('data-desc');
+
+        const prio = btn.getAttribute('data-prioridad') || 'MEDIA';
+        document.querySelectorAll('.edit-prio-radio').forEach(r => {
+            r.checked = (r.value === prio);
+        });
+
+        const sectorSelect = document.getElementById('edit-sector');
+        const sectorVal = btn.getAttribute('data-sector') || 'General';
+        sectorSelect.value = sectorVal;
+
+        const asignados = (btn.getAttribute('data-asignados') || '').split(',');
+        document.querySelectorAll('.edit-checkbox').forEach(cb => {
+            cb.checked = asignados.includes(cb.value);
+        });
+
+        drawer.classList.remove('hidden');
+    }
+
+    function cerrarPanelEditar() {
+        document.getElementById('drawer-editar')?.classList.add('hidden');
+    }
+
+    function confirmarEliminarTarea() {
+        if (confirm('¿Estás seguro de eliminar esta tarea puntual? Esta acción no se puede deshacer.')) {
+            document.getElementById('form-eliminar-tarea').submit();
+        }
     }
 
     document.addEventListener("DOMContentLoaded", () => {
-        const urlParams = new URLSearchParams(window.location.search);
-        const fechaParam = urlParams.get('fecha');
-        let initialDate = new Date();
-        if (fechaParam && /^\d{4}-\d{2}-\d{2}$/.test(fechaParam)) {
-            const [y, m, d] = fechaParam.split('-').map(Number);
-            initialDate = new Date(y, m - 1, d);
-        }
-
-        let currentStartDate = new Date(initialDate);
-        let selectedDate = new Date(initialDate);
+        const fechaSelStr = "{{ fecha_sel_iso }}";
+        const [y, m, d] = fechaSelStr.split('-').map(Number);
+        const selectedDate = new Date(y, m - 1, d);
+        let currentStartDate = new Date(selectedDate);
 
         const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
         const diasSemana = ["D", "L", "M", "M", "J", "V", "S"];
-        const diasSemanaLargo = ["DO", "LU", "MA", "MI", "JU", "VI", "SA"];
 
-        function formatDateISO(d) {
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return `${y}-${m}-${day}`;
+        function formatDateISO(dt) {
+            const yy = dt.getFullYear();
+            const mm = String(dt.getMonth() + 1).padStart(2, '0');
+            const dd = String(dt.getDate()).padStart(2, '0');
+            return `${yy}-${mm}-${dd}`;
         }
 
-        function getMonday(d) {
-            d = new Date(d);
-            var day = d.getDay(), diff = d.getDate() - day + (day == 0 ? -6 : 1);
-            return new Date(d.setDate(diff));
-        }
-
-        function updateTasksStatus() {
-            const now = new Date();
-            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            const sel = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-            const selectedISO = formatDateISO(selectedDate);
-
-            const inputFecha = document.getElementById('t-fecha');
-            if (inputFecha) inputFecha.value = selectedISO;
-            
-            const currentHour = now.getHours().toString().padStart(2, '0');
-            const currentMin = now.getMinutes().toString().padStart(2, '0');
-            const currentTimeStr = `${currentHour}:${currentMin}`;
-
-            // Ordenar cronológicamente todas las tareas
-            const container = document.getElementById('lista-tareas');
-            const cardsArray = Array.from(container.children);
-            cardsArray.sort((a, b) => {
-                const timeA = a.getAttribute('data-start');
-                const timeB = b.getAttribute('data-start');
-                return timeA.localeCompare(timeB);
-            });
-            container.innerHTML = '';
-            cardsArray.forEach(card => container.appendChild(card));
-
-            // Filtrar tareas puntuales por fecha y actualizar estados
-            document.querySelectorAll('.task-card').forEach(card => {
-                if (card.classList.contains('daily-task')) {
-                    const baseUrl = card.getAttribute('data-base-url');
-                    card.setAttribute('href', `${baseUrl}?fecha=${selectedISO}`);
-                }
-
-                if (card.classList.contains('puntual-task')) {
-                    const cardFecha = card.getAttribute('data-fecha');
-                    if (cardFecha === selectedISO) {
-                        card.classList.remove('hidden');
-                    } else {
-                        card.classList.add('hidden');
-                    }
-                }
-
-                const badge = card.querySelector('.task-badge');
-                const start = card.getAttribute('data-start');
-                const end = card.getAttribute('data-end');
-                
-                let status = "";
-                if (sel < today) { status = "Completada"; } 
-                else if (sel > today) { status = "Pendiente"; } 
-                else {
-                    if (currentTimeStr > end) status = "Completada";
-                    else if (currentTimeStr >= start && currentTimeStr <= end) status = "En Progreso";
-                    else status = "Pendiente";
-                }
-
-                if (status === "Completada") {
-                    badge.className = "task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 bg-emerald-50 text-emerald-600 border-emerald-200";
-                } else if (status === "En Progreso") {
-                    badge.className = "task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 bg-blue-50 text-blue-600 border-blue-200 animate-pulse";
-                } else {
-                    badge.className = "task-badge text-xs font-bold px-2 py-1 rounded border inline-block mb-2 bg-slate-100 text-slate-500 border-slate-200";
-                }
-                badge.textContent = status;
-            });
+        function getMonday(dt) {
+            const copy = new Date(dt);
+            const day = copy.getDay();
+            const diff = copy.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(copy.setDate(diff));
         }
 
         function renderWeek() {
             const container = document.getElementById("calendario-contenedor");
             container.innerHTML = "";
-            let monday = getMonday(currentStartDate);
+            const monday = getMonday(currentStartDate);
             document.getElementById("mes-titulo").textContent = `${meses[monday.getMonth()]} ${monday.getFullYear()}`;
 
             for (let i = 0; i < 7; i++) {
-                let iterDate = new Date(monday);
+                const iterDate = new Date(monday);
                 iterDate.setDate(monday.getDate() + i);
+                const iterISO = formatDateISO(iterDate);
+                const isSelected = iterISO === fechaSelStr;
 
-                let isSelected = iterDate.toDateString() === selectedDate.toDateString();
-                let dayDiv = document.createElement("div");
-                dayDiv.className = "flex flex-col items-center min-w-[3rem] cursor-pointer transition-transform hover:scale-110";
-                
-                let letterColor = isSelected ? "text-emerald-700 font-bold" : "text-slate-500";
-                let numberStyle = isSelected 
-                    ? "bg-emerald-600 text-white shadow-md rounded-full w-10 h-10 flex items-center justify-center font-bold" 
+                const dayLink = document.createElement("a");
+                dayLink.href = `?fecha=${iterISO}`;
+                dayLink.className = "flex flex-col items-center min-w-[3rem] cursor-pointer transition-transform hover:scale-110";
+
+                const letterColor = isSelected ? "text-emerald-700 font-bold" : "text-slate-500";
+                const numberStyle = isSelected
+                    ? "bg-emerald-600 text-white shadow-md rounded-full w-10 h-10 flex items-center justify-center font-bold"
                     : "text-slate-700 font-medium h-10 flex items-center";
-                let dotHtml = isSelected 
-                    ? '<div class="w-1.5 h-1.5 bg-emerald-600 rounded-full mt-1"></div>' 
+                const dotHtml = isSelected
+                    ? '<div class="w-1.5 h-1.5 bg-emerald-600 rounded-full mt-1"></div>'
                     : '<div class="w-1.5 h-1.5 bg-transparent rounded-full mt-1"></div>';
 
-                dayDiv.innerHTML = `<span class="text-xs mb-1 ${letterColor}">${diasSemana[iterDate.getDay()]}</span><span class="text-lg ${numberStyle}">${iterDate.getDate()}</span>${dotHtml}`;
-
-                dayDiv.addEventListener("click", () => {
-                    selectedDate = new Date(iterDate);
-                    updateSubtitle();
-                    renderWeek();
-                });
-
-                container.appendChild(dayDiv);
+                dayLink.innerHTML = `<span class="text-xs mb-1 ${letterColor}">${diasSemana[iterDate.getDay()]}</span><span class="text-lg ${numberStyle}">${iterDate.getDate()}</span>${dotHtml}`;
+                container.appendChild(dayLink);
             }
-            updateTasksStatus();
         }
 
-        function updateSubtitle() {
-            let subtitulo = `${diasSemanaLargo[selectedDate.getDay()]}, ${selectedDate.getDate()} DE ${meses[selectedDate.getMonth()].toUpperCase()}, ${selectedDate.getFullYear()}`;
-            document.getElementById("fecha-seleccionada").textContent = subtitulo;
-        }
-
-        document.getElementById("btn-prev").addEventListener("click", () => { currentStartDate.setDate(currentStartDate.getDate() - 7); renderWeek(); });
-        document.getElementById("btn-next").addEventListener("click", () => { currentStartDate.setDate(currentStartDate.getDate() + 7); renderWeek(); });
-        document.getElementById("btn-hoy").addEventListener("click", () => {
-            currentStartDate = new Date();
-            selectedDate = new Date();
-            updateSubtitle();
+        document.getElementById("btn-prev").addEventListener("click", () => {
+            currentStartDate.setDate(currentStartDate.getDate() - 7);
+            renderWeek();
+        });
+        document.getElementById("btn-next").addEventListener("click", () => {
+            currentStartDate.setDate(currentStartDate.getDate() + 7);
             renderWeek();
         });
 
-        updateSubtitle();
         renderWeek();
     });
 </script>

@@ -1,8 +1,6 @@
 from django.db import models
 from usuarios.models import Personal
 
-# Create your models here.
-
 
 # 4. Entidad TAREA
 class Tarea(models.Model):
@@ -10,9 +8,12 @@ class Tarea(models.Model):
     nombreTarea = models.CharField(max_length=100)
     descripcion = models.TextField()
     fechaProgramada = models.DateField()
+    fechaFin = models.DateField(null=True, blank=True)
     horaInicio = models.CharField(max_length=5, default='08:00')
     horaFin = models.CharField(max_length=5, default='09:00')
     estadoAsignacion = models.CharField(max_length=20, default='Pendiente')
+    fechaCompletada = models.DateField(null=True, blank=True)
+    observaciones = models.TextField(blank=True, default='')
 
     def __str__(self):
         return f"{self.nombreTarea} ({self.fechaProgramada})"
@@ -38,3 +39,16 @@ class AsignacionTarea(models.Model):
         db_table = 'ASIGNACION_TAREA'
         verbose_name = 'Asignación de Tarea'
         verbose_name_plural = 'Asignaciones de Tareas'
+
+
+# Registro manual de confirmación y notas para las 3 tareas diarias fijas
+class EstadoTareaDiaria(models.Model):
+    idRegistro = models.AutoField(primary_key=True)
+    tareaDiariaId = models.IntegerField()
+    fecha = models.DateField()
+    completada = models.BooleanField(default=False)
+    observaciones = models.TextField(blank=True, default='')
+
+    class Meta:
+        db_table = 'ESTADO_TAREA_DIARIA'
+        unique_together = ('tareaDiariaId', 'fecha')
